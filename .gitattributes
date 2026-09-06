@@ -1,0 +1,12 @@
+# Force LF line endings for text files; keep this repo platform agnostic.
+* text=auto eol=lf
+
+# Python source
+*.py text eol=lf
+
+# Project metadata and docs
+*.toml text eol=lf
+*.cfg text eol=lf
+*.md text eol=lf
+*.rst text eol=lf
+*.txt text eol=lf
