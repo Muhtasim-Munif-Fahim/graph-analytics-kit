@@ -117,6 +117,15 @@ class Graph:
     def nodes(self) -> List[int]:
         return list(self._nodes)
 
+    def __len__(self) -> int:
+        return self.number_of_nodes()
+
+    def __repr__(self) -> str:
+        return (
+            f"Graph(n_nodes={self.number_of_nodes()}, "
+            f"n_edges={self.number_of_edges()}, directed={self.directed})"
+        )
+
     def neighbors(self, node: int) -> List[int]:
         return list(self._adj[node].keys())
 
