@@ -1,7 +1,6 @@
 """Graph data model and built-in datasets."""
 from __future__ import annotations
 
-from typing import List, Tuple
 
 import numpy as np
 import pytest

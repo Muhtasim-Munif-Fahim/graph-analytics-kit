@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 from .centrality import betweenness_centrality, closeness_centrality, degree_centrality
@@ -100,22 +99,22 @@ def _compose_report(g: Graph) -> str:
     bc = betweenness_centrality(g)
     lc = local_clustering(g)
     lines = [
-        f"# Graph Analytics Report",
-        f"",
-        f"Source: Zachary's Karate Club",
-        f"",
-        f"## Summary",
-        f"",
+        "# Graph Analytics Report",
+        "",
+        "Source: Zachary's Karate Club",
+        "",
+        "## Summary",
+        "",
         f"- Nodes: {g.number_of_nodes()}",
         f"- Edges: {g.number_of_edges()}",
         f"- Density: {g.density():.4f}",
         f"- Connected: {g.is_connected()}",
         f"- Average clustering: {average_clustering(g):.6f}",
-        f"",
-        f"## Centrality (top 5)",
-        f"",
-        f"| Node | Degree | Closeness | Betweenness | Clustering |",
-        f"|------|--------|-----------|-------------|------------|",
+        "",
+        "## Centrality (top 5)",
+        "",
+        "| Node | Degree | Closeness | Betweenness | Clustering |",
+        "|------|--------|-----------|-------------|------------|",
     ]
     dc_ranked = sorted(dc.items(), key=lambda x: x[1], reverse=True)
     for node, score in dc_ranked[:5]:
