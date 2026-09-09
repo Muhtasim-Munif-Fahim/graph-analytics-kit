@@ -12,6 +12,8 @@ from .centrality import (
     degree_centrality_array,
 )
 from .clustering import average_clustering, local_clustering
+from .dfs import dfs_path, dfs_traversal
+from .mst import kruskal_mst, mst_weight
 
 __all__ = [
     "__version__",
@@ -23,4 +25,8 @@ __all__ = [
     "betweenness_centrality",
     "local_clustering",
     "average_clustering",
+    "dfs_traversal",
+    "dfs_path",
+    "kruskal_mst",
+    "mst_weight",
 ]
