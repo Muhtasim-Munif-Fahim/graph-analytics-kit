@@ -1,7 +1,7 @@
 """Minimum-spanning-tree algorithms for weighted graphs."""
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 
 from .graph import Graph, WeightedEdge
 

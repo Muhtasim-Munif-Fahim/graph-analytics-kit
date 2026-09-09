@@ -1,8 +1,6 @@
 """Tests for depth-first traversal algorithms."""
 from __future__ import annotations
 
-import pytest
-
 from graph_analytics_kit import Graph, karate_club
 from graph_analytics_kit.dfs import dfs_path, dfs_traversal
 
