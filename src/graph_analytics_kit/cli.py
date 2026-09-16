@@ -4,7 +4,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .centrality import betweenness_centrality, closeness_centrality, degree_centrality
+from .centrality import (
+    betweenness_centrality,
+    closeness_centrality,
+    degree_centrality,
+    pagerank,
+)
 from .clustering import average_clustering, local_clustering
 from .graph import Graph, karate_club
 
@@ -25,7 +30,7 @@ def _build_parser() -> argparse.ArgumentParser:
     cent = sub.add_parser("centrality", help="Print centrality rankings")
     _add_graph_args(cent)
     cent.add_argument(
-        "--measure", choices=["degree", "closeness", "betweenness"],
+        "--measure", choices=["degree", "closeness", "betweenness", "pagerank"],
         default="degree",
     )
     cent.add_argument("--top", type=int, default=5, help="Show top N nodes")
@@ -70,12 +75,13 @@ def cmd_stats(args: argparse.Namespace) -> int:
 
 def cmd_centrality(args: argparse.Namespace) -> int:
     g = _load_graph(args)
-    if args.measure == "degree":
-        scores = degree_centrality(g)
-    elif args.measure == "closeness":
-        scores = closeness_centrality(g)
-    else:
-        scores = betweenness_centrality(g)
+    measures = {
+        "degree": degree_centrality,
+        "closeness": closeness_centrality,
+        "betweenness": betweenness_centrality,
+        "pagerank": pagerank,
+    }
+    scores = measures[args.measure](g)
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     for node, score in ranked[:args.top]:
         print(f"{node}: {score:.6f}")
@@ -97,6 +103,7 @@ def _compose_report(g: Graph) -> str:
     dc = degree_centrality(g)
     cc = closeness_centrality(g)
     bc = betweenness_centrality(g)
+    pr = pagerank(g)
     lc = local_clustering(g)
     lines = [
         "# Graph Analytics Report",
@@ -113,13 +120,14 @@ def _compose_report(g: Graph) -> str:
         "",
         "## Centrality (top 5)",
         "",
-        "| Node | Degree | Closeness | Betweenness | Clustering |",
-        "|------|--------|-----------|-------------|------------|",
+        "| Node | Degree | Closeness | Betweenness | PageRank | Clustering |",
+        "|------|--------|-----------|-------------|----------|------------|",
     ]
     dc_ranked = sorted(dc.items(), key=lambda x: x[1], reverse=True)
     for node, score in dc_ranked[:5]:
         lines.append(
-            f"| {node} | {dc[node]:.4f} | {cc[node]:.6f} | {bc[node]:.6f} | {lc[node]:.6f} |"
+            f"| {node} | {dc[node]:.4f} | {cc[node]:.6f} | {bc[node]:.6f} | "
+            f"{pr[node]:.6f} | {lc[node]:.6f} |"
         )
     return "\n".join(lines) + "\n"
 

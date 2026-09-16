@@ -18,8 +18,8 @@ def pagerank(
     PageRank models a random surfer who follows outgoing links with
     probability ``alpha`` and jumps to a uniformly random node with
     probability ``1 - alpha``. For undirected graphs every edge is treated
-    as bidirectional, so a node with degree zero still receives rank from
-    its neighbors.
+    as bidirectional. Nodes with out-degree zero (dangling nodes) leak
+    their remaining rank uniformly to every node.
 
     The power-iteration method converges to a stationary distribution; the
     algorithm stops when the L1 norm of the residual between successive
@@ -51,38 +51,25 @@ def pagerank(
     if n == 0:
         return {}
 
+    neighbors = {node: g.neighbors(node) for node in nodes}
     rank = {node: 1.0 / n for node in nodes}
     teleport = (1.0 - alpha) / n
 
     for _ in range(max_iter):
         new_rank: Dict[int, float] = {node: teleport for node in nodes}
-        if g.directed:
-            out_deg = {node: g.degree(node) for node in nodes}
-            dangling_mass = 0.0
+        dangling_mass = 0.0
+        for node in nodes:
+            nbrs = neighbors[node]
+            if not nbrs:
+                dangling_mass += alpha * rank[node]
+                continue
+            share = alpha * rank[node] / len(nbrs)
+            for v in nbrs:
+                new_rank[v] += share
+        if dangling_mass:
+            extra = dangling_mass / n
             for node in nodes:
-                d = out_deg[node]
-                if d == 0:
-                    dangling_mass += alpha * rank[node]
-            for node in nodes:
-                neighbors = g.neighbors(node)
-                if not neighbors:
-                    continue
-                share = alpha * rank[node] / len(neighbors)
-                for v in neighbors:
-                    new_rank[v] += share
-            for node in nodes:
-                new_rank[node] += dangling_mass / n
-        else:
-            total_degree = sum(g.degree(node) for node in nodes)
-            if total_degree == 0:
-                return {node: 1.0 / n for node in nodes}
-            for node in nodes:
-                d = g.degree(node)
-                if d == 0:
-                    continue
-                share = alpha * rank[node] / d
-                for v in g.neighbors(node):
-                    new_rank[v] += share
+                new_rank[node] += extra
 
         delta = sum(abs(new_rank[node] - rank[node]) for node in nodes)
         rank = new_rank
