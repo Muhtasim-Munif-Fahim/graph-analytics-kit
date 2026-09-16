@@ -115,4 +115,4 @@ def test_demo_report_includes_pagerank(tmp_path) -> None:
     assert main(["demo", "-o", str(out)]) == 0
     text = out.read_text(encoding="utf-8")
     assert "PageRank" in text
-    assert "| Node | Degree | Closeness | Betweenness | PageRank | Clustering |" in text
+    assert "| Node | Degree | Closeness | Betweenness | PageRank | Clustering | Community |" in text

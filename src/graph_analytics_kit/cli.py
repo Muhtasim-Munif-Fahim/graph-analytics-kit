@@ -11,6 +11,7 @@ from .centrality import (
     pagerank,
 )
 from .clustering import average_clustering, local_clustering
+from .community import communities, modularity
 from .graph import Graph, karate_club
 
 
@@ -37,6 +38,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     clust = sub.add_parser("clustering", help="Print clustering coefficients")
     _add_graph_args(clust)
+
+    comm = sub.add_parser("communities", help="Print detected communities")
+    _add_graph_args(comm)
 
     return parser
 
@@ -99,12 +103,25 @@ def cmd_clustering(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_communities(args: argparse.Namespace) -> int:
+    g = _load_graph(args)
+    parts = communities(g)
+    print(f"n_communities: {len(parts)}")
+    print(f"modularity: {modularity(g, parts):.6f}")
+    for index, part in enumerate(parts):
+        members = ", ".join(str(node) for node in part)
+        print(f"  community {index} (n={len(part)}): {members}")
+    return 0
+
+
 def _compose_report(g: Graph) -> str:
     dc = degree_centrality(g)
     cc = closeness_centrality(g)
     bc = betweenness_centrality(g)
     pr = pagerank(g)
     lc = local_clustering(g)
+    parts = communities(g)
+    comm_of = {node: index for index, part in enumerate(parts) for node in part}
     lines = [
         "# Graph Analytics Report",
         "",
@@ -117,18 +134,35 @@ def _compose_report(g: Graph) -> str:
         f"- Density: {g.density():.4f}",
         f"- Connected: {g.is_connected()}",
         f"- Average clustering: {average_clustering(g):.6f}",
+        f"- Communities (Louvain): {len(parts)}",
+        f"- Modularity: {modularity(g, parts):.6f}",
         "",
         "## Centrality (top 5)",
         "",
-        "| Node | Degree | Closeness | Betweenness | PageRank | Clustering |",
-        "|------|--------|-----------|-------------|----------|------------|",
+        "| Node | Degree | Closeness | Betweenness | PageRank | Clustering | Community |",
+        "|------|--------|-----------|-------------|----------|------------|-----------|",
     ]
     dc_ranked = sorted(dc.items(), key=lambda x: x[1], reverse=True)
     for node, score in dc_ranked[:5]:
         lines.append(
             f"| {node} | {dc[node]:.4f} | {cc[node]:.6f} | {bc[node]:.6f} | "
-            f"{pr[node]:.6f} | {lc[node]:.6f} |"
+            f"{pr[node]:.6f} | {lc[node]:.6f} | {comm_of[node]} |"
         )
+    lines.extend(
+        [
+            "",
+            "## Communities",
+            "",
+            "Louvain modularity maximization on Zachary's Karate Club. "
+            "Community ids are ordered by the smallest node label in each group.",
+            "",
+            "| Community | Size | Nodes |",
+            "|-----------|------|-------|",
+        ]
+    )
+    for index, part in enumerate(parts):
+        members = ", ".join(str(node) for node in part)
+        lines.append(f"| {index} | {len(part)} | {members} |")
     return "\n".join(lines) + "\n"
 
 
@@ -137,6 +171,7 @@ _COMMANDS = {
     "stats": cmd_stats,
     "centrality": cmd_centrality,
     "clustering": cmd_clustering,
+    "communities": cmd_communities,
 }
 
 

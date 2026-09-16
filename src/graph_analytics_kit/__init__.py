@@ -12,6 +12,7 @@ from .centrality import (
     degree_centrality_array,
 )
 from .clustering import average_clustering, local_clustering
+from .community import communities, modularity
 from .dfs import dfs_path, dfs_traversal
 from .mst import kruskal_mst, mst_weight
 from .pagerank import pagerank
@@ -27,6 +28,8 @@ __all__ = [
     "pagerank",
     "local_clustering",
     "average_clustering",
+    "communities",
+    "modularity",
     "dfs_traversal",
     "dfs_path",
     "kruskal_mst",
