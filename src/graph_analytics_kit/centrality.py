@@ -7,6 +7,7 @@ from typing import Dict
 import numpy as np
 
 from .graph import Graph
+from .pagerank import pagerank
 
 
 def degree_centrality(g: Graph) -> Dict[int, int]:
@@ -113,4 +114,5 @@ __all__ = [
     "degree_centrality_array",
     "closeness_centrality",
     "betweenness_centrality",
+    "pagerank",
 ]

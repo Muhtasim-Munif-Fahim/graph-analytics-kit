@@ -14,6 +14,7 @@ from .centrality import (
 from .clustering import average_clustering, local_clustering
 from .dfs import dfs_path, dfs_traversal
 from .mst import kruskal_mst, mst_weight
+from .pagerank import pagerank
 
 __all__ = [
     "__version__",
@@ -23,6 +24,7 @@ __all__ = [
     "degree_centrality_array",
     "closeness_centrality",
     "betweenness_centrality",
+    "pagerank",
     "local_clustering",
     "average_clustering",
     "dfs_traversal",
