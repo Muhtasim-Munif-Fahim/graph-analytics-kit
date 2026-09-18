@@ -24,6 +24,9 @@ def dijkstra_shortest_path(
     (or ``None`` for the source itself). Unreachable nodes are absent from
     ``distances``.
     """
+    if source not in g.nodes:
+        raise KeyError(f"{source} is not a node in the graph")
+
     dist: Dict[int, float] = {source: 0.0}
     prev: Dict[int, Optional[int]] = {source: None}
     visited: set[int] = set()
@@ -39,7 +42,9 @@ def dijkstra_shortest_path(
         for v in g.neighbors(u):
             if v in visited:
                 continue
-            weight = g._adj[u][v]
+            weight = g.get_weight(u, v)
+            if weight < 0:
+                raise ValueError("Dijkstra requires non-negative edge weights")
             alt = d + weight
             if v not in dist or alt < dist[v]:
                 dist[v] = alt

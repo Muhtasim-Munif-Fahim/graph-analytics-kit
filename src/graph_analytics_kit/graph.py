@@ -132,6 +132,16 @@ class Graph:
     def has_edge(self, u: int, v: int) -> bool:
         return v in self._adj.get(u, {})
 
+    def get_weight(self, u: int, v: int) -> float:
+        """Return the weight of the edge from *u* to *v*.
+
+        Raises ``KeyError`` if the edge does not exist.
+        """
+        nbrs = self._adj.get(u)
+        if nbrs is None or v not in nbrs:
+            raise KeyError(f"no edge from {u} to {v}")
+        return nbrs[v]
+
     def degree(self, node: int) -> int:
         if not self.directed:
             return len(self._adj[node])

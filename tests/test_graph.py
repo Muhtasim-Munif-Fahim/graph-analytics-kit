@@ -45,6 +45,14 @@ def test_has_edge_and_neighbors() -> None:
     assert set(g.neighbors(0)) == {1, 2}
 
 
+def test_get_weight() -> None:
+    g = Graph([(0, 1, 0.5), (1, 2, 1.5)])
+    assert g.get_weight(0, 1) == pytest.approx(0.5)
+    assert g.get_weight(1, 0) == pytest.approx(0.5)
+    with pytest.raises(KeyError, match="no edge"):
+        g.get_weight(0, 2)
+
+
 def test_adjacency_matrix_triangle() -> None:
     g = _triangle()
     A = g.adjacency_matrix()
