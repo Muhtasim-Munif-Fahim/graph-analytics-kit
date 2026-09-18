@@ -13,6 +13,7 @@ from .centrality import (
 from .clustering import average_clustering, local_clustering
 from .community import communities, modularity
 from .graph import Graph, karate_club
+from .shortest_path import dijkstra_shortest_path, reconstruct_path
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -41,6 +42,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
     comm = sub.add_parser("communities", help="Print detected communities")
     _add_graph_args(comm)
+
+    sp = sub.add_parser("shortest-path", help="Print Dijkstra shortest paths")
+    _add_graph_args(sp)
+    sp.add_argument("--source", type=int, default=0, help="Source node label")
+    sp.add_argument("--target", type=int, default=None, help="Optional target node")
+    sp.add_argument("--top", type=int, default=5, help="Show closest N nodes")
 
     return parser
 
@@ -114,6 +121,23 @@ def cmd_communities(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_shortest_path(args: argparse.Namespace) -> int:
+    g = _load_graph(args)
+    dist, prev = dijkstra_shortest_path(g, args.source, target=args.target)
+    if args.target is not None:
+        if args.target not in dist:
+            print(f"{args.target} is not reachable from {args.source}")
+            return 1
+        path = reconstruct_path(prev, args.source, args.target)
+        print(f"distance: {dist[args.target]:.6f}")
+        print("path: " + " -> ".join(str(node) for node in path))
+        return 0
+    ranked = sorted(dist.items(), key=lambda item: (item[1], item[0]))
+    for node, score in ranked[: args.top]:
+        print(f"{node}: {score:.6f}")
+    return 0
+
+
 def _compose_report(g: Graph) -> str:
     dc = degree_centrality(g)
     cc = closeness_centrality(g)
@@ -121,6 +145,8 @@ def _compose_report(g: Graph) -> str:
     pr = pagerank(g)
     lc = local_clustering(g)
     parts = communities(g)
+    dist, prev = dijkstra_shortest_path(g, 0, target=33)
+    path_to_33 = reconstruct_path(prev, 0, 33)
     comm_of = {node: index for index, part in enumerate(parts) for node in part}
     lines = [
         "# Graph Analytics Report",
@@ -163,6 +189,19 @@ def _compose_report(g: Graph) -> str:
     for index, part in enumerate(parts):
         members = ", ".join(str(node) for node in part)
         lines.append(f"| {index} | {len(part)} | {members} |")
+    hop_path = " -> ".join(str(node) for node in path_to_33)
+    lines.extend(
+        [
+            "",
+            "## Shortest paths",
+            "",
+            "Dijkstra distances from the instructor (node 0). Karate Club "
+            "edges are unweighted, so distance is hop count.",
+            "",
+            f"- Distance to administrator (node 33): {dist[33]:.0f}",
+            f"- Path: {hop_path}",
+        ]
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -172,6 +211,7 @@ _COMMANDS = {
     "centrality": cmd_centrality,
     "clustering": cmd_clustering,
     "communities": cmd_communities,
+    "shortest-path": cmd_shortest_path,
 }
 
 
