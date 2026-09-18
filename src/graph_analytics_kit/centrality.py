@@ -6,6 +6,7 @@ from typing import Dict
 
 import numpy as np
 
+from .eigenvector import eigenvector_centrality
 from .graph import Graph
 from .pagerank import pagerank
 
@@ -115,4 +116,5 @@ __all__ = [
     "closeness_centrality",
     "betweenness_centrality",
     "pagerank",
+    "eigenvector_centrality",
 ]

@@ -10,6 +10,7 @@ from .centrality import (
     closeness_centrality,
     degree_centrality,
     degree_centrality_array,
+    eigenvector_centrality,
 )
 from .clustering import average_clustering, local_clustering
 from .community import communities, modularity
@@ -27,6 +28,7 @@ __all__ = [
     "closeness_centrality",
     "betweenness_centrality",
     "pagerank",
+    "eigenvector_centrality",
     "local_clustering",
     "average_clustering",
     "communities",
