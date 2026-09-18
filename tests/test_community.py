@@ -161,6 +161,7 @@ def test_demo_report_includes_communities(tmp_path) -> None:
     assert "Louvain" in text
     assert "Modularity:" in text
     assert (
-        "| Node | Degree | Closeness | Betweenness | PageRank | Clustering | Community |"
+        "| Node | Degree | Closeness | Betweenness | PageRank | Eigenvector | "
+        "Clustering | Community |"
         in text
     )

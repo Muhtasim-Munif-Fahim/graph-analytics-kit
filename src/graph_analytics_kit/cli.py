@@ -8,6 +8,7 @@ from .centrality import (
     betweenness_centrality,
     closeness_centrality,
     degree_centrality,
+    eigenvector_centrality,
     pagerank,
 )
 from .clustering import average_clustering, local_clustering
@@ -32,7 +33,8 @@ def _build_parser() -> argparse.ArgumentParser:
     cent = sub.add_parser("centrality", help="Print centrality rankings")
     _add_graph_args(cent)
     cent.add_argument(
-        "--measure", choices=["degree", "closeness", "betweenness", "pagerank"],
+        "--measure",
+        choices=["degree", "closeness", "betweenness", "pagerank", "eigenvector"],
         default="degree",
     )
     cent.add_argument("--top", type=int, default=5, help="Show top N nodes")
@@ -91,6 +93,7 @@ def cmd_centrality(args: argparse.Namespace) -> int:
         "closeness": closeness_centrality,
         "betweenness": betweenness_centrality,
         "pagerank": pagerank,
+        "eigenvector": eigenvector_centrality,
     }
     scores = measures[args.measure](g)
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
@@ -143,6 +146,7 @@ def _compose_report(g: Graph) -> str:
     cc = closeness_centrality(g)
     bc = betweenness_centrality(g)
     pr = pagerank(g)
+    ev = eigenvector_centrality(g)
     lc = local_clustering(g)
     parts = communities(g)
     dist, prev = dijkstra_shortest_path(g, 0, target=33)
@@ -165,14 +169,14 @@ def _compose_report(g: Graph) -> str:
         "",
         "## Centrality (top 5)",
         "",
-        "| Node | Degree | Closeness | Betweenness | PageRank | Clustering | Community |",
-        "|------|--------|-----------|-------------|----------|------------|-----------|",
+        "| Node | Degree | Closeness | Betweenness | PageRank | Eigenvector | Clustering | Community |",
+        "|------|--------|-----------|-------------|----------|-------------|------------|-----------|",
     ]
     dc_ranked = sorted(dc.items(), key=lambda x: x[1], reverse=True)
     for node, score in dc_ranked[:5]:
         lines.append(
             f"| {node} | {dc[node]:.4f} | {cc[node]:.6f} | {bc[node]:.6f} | "
-            f"{pr[node]:.6f} | {lc[node]:.6f} | {comm_of[node]} |"
+            f"{pr[node]:.6f} | {ev[node]:.6f} | {lc[node]:.6f} | {comm_of[node]} |"
         )
     lines.extend(
         [
