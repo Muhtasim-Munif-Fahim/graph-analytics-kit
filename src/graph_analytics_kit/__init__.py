@@ -16,6 +16,7 @@ from .clustering import average_clustering, local_clustering
 from .community import communities, modularity
 from .dfs import dfs_path, dfs_traversal
 from .mst import kruskal_mst, mst_weight
+from .hits import hits
 from .pagerank import pagerank
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
 
@@ -29,6 +30,7 @@ __all__ = [
     "betweenness_centrality",
     "pagerank",
     "eigenvector_centrality",
+    "hits",
     "local_clustering",
     "average_clustering",
     "communities",
