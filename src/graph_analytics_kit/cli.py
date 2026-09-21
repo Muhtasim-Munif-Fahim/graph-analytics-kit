@@ -9,6 +9,7 @@ from .centrality import (
     closeness_centrality,
     degree_centrality,
     eigenvector_centrality,
+    hits,
     pagerank,
 )
 from .clustering import average_clustering, local_clustering
@@ -34,7 +35,15 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_graph_args(cent)
     cent.add_argument(
         "--measure",
-        choices=["degree", "closeness", "betweenness", "pagerank", "eigenvector"],
+        choices=[
+            "degree",
+            "closeness",
+            "betweenness",
+            "pagerank",
+            "eigenvector",
+            "hubs",
+            "authorities",
+        ],
         default="degree",
     )
     cent.add_argument("--top", type=int, default=5, help="Show top N nodes")
@@ -94,6 +103,8 @@ def cmd_centrality(args: argparse.Namespace) -> int:
         "betweenness": betweenness_centrality,
         "pagerank": pagerank,
         "eigenvector": eigenvector_centrality,
+        "hubs": lambda graph: hits(graph)[0],
+        "authorities": lambda graph: hits(graph)[1],
     }
     scores = measures[args.measure](g)
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
@@ -147,6 +158,7 @@ def _compose_report(g: Graph) -> str:
     bc = betweenness_centrality(g)
     pr = pagerank(g)
     ev = eigenvector_centrality(g)
+    hubs, authorities = hits(g)
     lc = local_clustering(g)
     parts = communities(g)
     dist, prev = dijkstra_shortest_path(g, 0, target=33)
@@ -169,14 +181,15 @@ def _compose_report(g: Graph) -> str:
         "",
         "## Centrality (top 5)",
         "",
-        "| Node | Degree | Closeness | Betweenness | PageRank | Eigenvector | Clustering | Community |",
-        "|------|--------|-----------|-------------|----------|-------------|------------|-----------|",
+        "| Node | Degree | Closeness | Betweenness | PageRank | Eigenvector | Hub | Authority | Clustering | Community |",
+        "|------|--------|-----------|-------------|----------|-------------|-----|-----------|------------|-----------|",
     ]
     dc_ranked = sorted(dc.items(), key=lambda x: x[1], reverse=True)
     for node, score in dc_ranked[:5]:
         lines.append(
             f"| {node} | {dc[node]:.4f} | {cc[node]:.6f} | {bc[node]:.6f} | "
-            f"{pr[node]:.6f} | {ev[node]:.6f} | {lc[node]:.6f} | {comm_of[node]} |"
+            f"{pr[node]:.6f} | {ev[node]:.6f} | {hubs[node]:.6f} | "
+            f"{authorities[node]:.6f} | {lc[node]:.6f} | {comm_of[node]} |"
         )
     lines.extend(
         [

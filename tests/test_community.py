@@ -162,6 +162,6 @@ def test_demo_report_includes_communities(tmp_path) -> None:
     assert "Modularity:" in text
     assert (
         "| Node | Degree | Closeness | Betweenness | PageRank | Eigenvector | "
-        "Clustering | Community |"
+        "Hub | Authority | Clustering | Community |"
         in text
     )
