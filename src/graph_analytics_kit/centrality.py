@@ -9,6 +9,7 @@ import numpy as np
 from .eigenvector import eigenvector_centrality
 from .graph import Graph
 from .hits import hits
+from .kcore import core_number
 from .pagerank import pagerank
 
 
@@ -119,4 +120,5 @@ __all__ = [
     "pagerank",
     "eigenvector_centrality",
     "hits",
+    "core_number",
 ]
