@@ -231,7 +231,7 @@ def test_demo_report_includes_hits(tmp_path) -> None:
     assert "Hub" in text
     assert "Authority" in text
     assert (
-        "| Node | Degree | Closeness | Betweenness | PageRank | Eigenvector | "
+        "| Node | Degree | Closeness | Betweenness | Core | PageRank | Eigenvector | "
         "Hub | Authority | Clustering | Community |"
         in text
     )

@@ -116,7 +116,7 @@ def test_demo_report_includes_pagerank(tmp_path) -> None:
     text = out.read_text(encoding="utf-8")
     assert "PageRank" in text
     assert (
-        "| Node | Degree | Closeness | Betweenness | PageRank | Eigenvector | "
+        "| Node | Degree | Closeness | Betweenness | Core | PageRank | Eigenvector | "
         "Hub | Authority | Clustering | Community |"
         in text
     )
