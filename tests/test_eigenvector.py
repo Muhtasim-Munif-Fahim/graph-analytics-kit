@@ -161,6 +161,6 @@ def test_demo_report_includes_eigenvector(tmp_path) -> None:
     assert "Eigenvector" in text
     assert (
         "| Node | Degree | Closeness | Betweenness | Core | PageRank | Eigenvector | "
-        "Hub | Authority | Clustering | Community |"
+        "Katz | Hub | Authority | Clustering | Community |"
         in text
     )
