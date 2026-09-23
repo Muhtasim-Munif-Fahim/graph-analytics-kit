@@ -266,6 +266,6 @@ def test_demo_report_includes_core(tmp_path) -> None:
     assert "Core" in text
     assert (
         "| Node | Degree | Closeness | Betweenness | Core | PageRank | Eigenvector | "
-        "Hub | Authority | Clustering | Community |"
+        "Katz | Hub | Authority | Clustering | Community |"
         in text
     )

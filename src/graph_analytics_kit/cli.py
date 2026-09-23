@@ -11,6 +11,7 @@ from .centrality import (
     degree_centrality,
     eigenvector_centrality,
     hits,
+    katz_centrality,
     pagerank,
 )
 from .clustering import average_clustering, local_clustering
@@ -42,6 +43,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "betweenness",
             "pagerank",
             "eigenvector",
+            "katz",
             "hubs",
             "authorities",
             "core",
@@ -49,6 +51,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default="degree",
     )
     cent.add_argument("--top", type=int, default=5, help="Show top N nodes")
+    cent.add_argument(
+        "--alpha",
+        type=float,
+        default=None,
+        help="Attenuation factor for Katz centrality (default: 0.1)",
+    )
 
     clust = sub.add_parser("clustering", help="Print clustering coefficients")
     _add_graph_args(clust)
@@ -105,11 +113,16 @@ def cmd_centrality(args: argparse.Namespace) -> int:
         "betweenness": betweenness_centrality,
         "pagerank": pagerank,
         "eigenvector": eigenvector_centrality,
+        "katz": katz_centrality,
         "hubs": lambda graph: hits(graph)[0],
         "authorities": lambda graph: hits(graph)[1],
         "core": core_number,
     }
-    scores = measures[args.measure](g)
+    measure = measures[args.measure]
+    if args.measure == "katz" and args.alpha is not None:
+        scores = measure(g, alpha=args.alpha)
+    else:
+        scores = measure(g)
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     for node, score in ranked[:args.top]:
         print(f"{node}: {score:.6f}")
@@ -161,6 +174,7 @@ def _compose_report(g: Graph) -> str:
     bc = betweenness_centrality(g)
     pr = pagerank(g)
     ev = eigenvector_centrality(g)
+    kz = katz_centrality(g)
     hubs, authorities = hits(g)
     cores = core_number(g)
     lc = local_clustering(g)
@@ -185,15 +199,16 @@ def _compose_report(g: Graph) -> str:
         "",
         "## Centrality (top 5)",
         "",
-        "| Node | Degree | Closeness | Betweenness | Core | PageRank | Eigenvector | Hub | Authority | Clustering | Community |",
-        "|------|--------|-----------|-------------|------|----------|-------------|-----|-----------|------------|-----------|",
+        "| Node | Degree | Closeness | Betweenness | Core | PageRank | Eigenvector | Katz | Hub | Authority | Clustering | Community |",
+        "|------|--------|-----------|-------------|------|----------|-------------|------|-----|-----------|------------|-----------|",
     ]
     dc_ranked = sorted(dc.items(), key=lambda x: x[1], reverse=True)
     for node, score in dc_ranked[:5]:
         lines.append(
             f"| {node} | {dc[node]:.4f} | {cc[node]:.6f} | {bc[node]:.6f} | "
-            f"{cores[node]} | {pr[node]:.6f} | {ev[node]:.6f} | {hubs[node]:.6f} | "
-            f"{authorities[node]:.6f} | {lc[node]:.6f} | {comm_of[node]} |"
+            f"{cores[node]} | {pr[node]:.6f} | {ev[node]:.6f} | {kz[node]:.6f} | "
+            f"{hubs[node]:.6f} | {authorities[node]:.6f} | {lc[node]:.6f} | "
+            f"{comm_of[node]} |"
         )
     lines.extend(
         [

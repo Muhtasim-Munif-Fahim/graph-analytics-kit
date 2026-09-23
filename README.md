@@ -2,7 +2,7 @@
 
 A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
-(degree, closeness, betweenness, PageRank, eigenvector, and HITS
+(degree, closeness, betweenness, PageRank, eigenvector, Katz, and HITS
 hubs/authorities), k-core numbers, Dijkstra shortest paths, clustering
 coefficients, community detection (Louvain), link-prediction scores, AUC
 evaluation, and a command-line entry point that runs an end-to-end
@@ -25,6 +25,7 @@ from graph_analytics_kit import (
     dijkstra_shortest_path,
     eigenvector_centrality,
     hits,
+    katz_centrality,
     local_clustering,
     pagerank,
     reconstruct_path,
@@ -35,6 +36,7 @@ print(degree_centrality(g)[0])
 print(local_clustering(g)[0])
 print(pagerank(g)[0])
 print(eigenvector_centrality(g)[0])
+print(katz_centrality(g, alpha=0.1)[0])
 hubs, authorities = hits(g)
 print(hubs[0], authorities[0])
 print(core_number(g)[0])
@@ -49,6 +51,12 @@ partition. `dijkstra_shortest_path(g, source)` returns distances and
 predecessors; `reconstruct_path` rebuilds a concrete path.
 `eigenvector_centrality(g)` returns the L2-normalized principal
 eigenvector of the adjacency matrix (power iteration).
+`katz_centrality(g, alpha=0.1)` solves `x = alpha * A^T x + beta`
+and returns one score per node. The attenuation factor `alpha`
+(default `0.1`) must be positive and strictly less than `1 / lambda_max`
+of the adjacency matrix, so longer walks count for less. Scores are
+L2-normalized by default; pass `normalized=False` for the raw solution.
+`beta` (default `1.0`) is the constant term.
 `hits(g)` returns Kleinberg hub and authority scores (L2-normalized);
 betweenness already ships via Brandes, so HITS is the additional
 link-analysis measure.
@@ -71,6 +79,7 @@ core numbers are those of the underlying simple undirected graph.
 ```bash
 graph-analytics demo -o report.md
 graph-analytics centrality --measure eigenvector
+graph-analytics centrality --measure katz --alpha 0.1
 graph-analytics centrality --measure hubs
 graph-analytics centrality --measure authorities
 graph-analytics centrality --measure core
