@@ -1,9 +1,9 @@
-"""Community detection via the Louvain method (modularity maximization)."""
+"""Community detection: Louvain modularity and label propagation."""
 from __future__ import annotations
 
 import random
 from collections import defaultdict
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from .graph import Graph
 
@@ -115,6 +115,107 @@ def modularity(g: Graph, parts: Sequence[Iterable[int]]) -> float:
     return quality
 
 
+def label_propagation(
+    g: Graph,
+    *,
+    max_iter: int = 100,
+    seed: Optional[int] = None,
+    return_labels: bool = False,
+) -> Union[List[List[int]], Tuple[List[List[int]], Dict[int, int]]]:
+    """Detect communities with asynchronous label propagation.
+
+    Each node starts with its own label. In a sweep, every node adopts the
+    label with the greatest total incident weight among its neighbors
+    (Raghavan, Albert, and Kumara, 2007). The current label is kept when
+    it is already one of those maxima. Otherwise a tie uses the smallest
+    label when *seed* is ``None``, and a uniform draw from *seed* when it
+    is set. Self-loops are ignored. Isolated nodes stay singletons.
+    Directed graphs are not supported.
+
+    When *seed* is ``None`` each sweep visits nodes in increasing neighbor
+    count, then node label, so the partition is deterministic and low-degree
+    nodes consolidate before hubs. When *seed* is set, each sweep shuffles
+    that order with the given RNG. Sweeps stop when a pass changes no label
+    or *max_iter* is reached.
+
+    Parameters
+    ----------
+    g:
+        Undirected input graph. Edge weights vote for the neighbor's label;
+        omitted weights count as ``1``.
+    max_iter:
+        Maximum sweeps. A run also stops as soon as a sweep changes nothing.
+    seed:
+        Optional RNG seed for shuffled sweeps and random tie breaks.
+    return_labels:
+        When ``True``, also return the node-to-label map. Label values are
+        the surviving propagated ids (original node labels), not renumbered
+        community indexes.
+
+    Returns
+    -------
+    list[list[int]] or tuple[list[list[int]], dict[int, int]]
+        Communities as lists of node labels, in the same order as
+        :func:`communities`: members sorted, communities ordered by their
+        smallest node label. With ``return_labels=True``, a ``(communities,
+        labels)`` pair.
+    """
+    if g.directed:
+        raise ValueError("label_propagation() requires an undirected graph")
+    if not isinstance(max_iter, int) or isinstance(max_iter, bool) or max_iter < 1:
+        raise ValueError("max_iter must be a positive integer")
+
+    nodes = g.nodes
+    if not nodes:
+        parts: List[List[int]] = []
+        return (parts, {}) if return_labels else parts
+
+    adj = _undirected_adj(g)
+    neighbors = {
+        node: {nbr: weight for nbr, weight in adj[node].items() if nbr != node}
+        for node in nodes
+    }
+    labels = {node: node for node in nodes}
+    rng = random.Random(seed) if seed is not None else None
+    if rng is None:
+        base_order = sorted(nodes, key=lambda node: (len(neighbors[node]), node))
+    else:
+        base_order = list(nodes)
+
+    for _ in range(max_iter):
+        order = list(base_order)
+        if rng is not None:
+            rng.shuffle(order)
+        changed = False
+        for node in order:
+            votes: Dict[int, float] = defaultdict(float)
+            for nbr, weight in neighbors[node].items():
+                votes[labels[nbr]] += weight
+            if not votes:
+                continue
+            best_score = max(votes.values())
+            candidates = sorted(
+                label for label, score in votes.items() if score >= best_score - 1e-12
+            )
+            current = labels[node]
+            if current in candidates:
+                chosen = current
+            elif rng is not None:
+                chosen = rng.choice(candidates)
+            else:
+                chosen = candidates[0]
+            if chosen != current:
+                labels[node] = chosen
+                changed = True
+        if not changed:
+            break
+
+    parts = _labels_to_communities(labels)
+    if return_labels:
+        return parts, labels
+    return parts
+
+
 def _undirected_adj(g: Graph) -> Dict[int, Dict[int, float]]:
     adj: Dict[int, Dict[int, float]] = {node: {} for node in g.nodes}
     for u, v, weight in g.edges:
@@ -219,4 +320,4 @@ def _partition_map(
     return comm
 
 
-__all__ = ["communities", "modularity"]
+__all__ = ["communities", "label_propagation", "modularity"]

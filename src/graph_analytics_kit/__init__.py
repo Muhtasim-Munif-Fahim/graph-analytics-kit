@@ -13,7 +13,7 @@ from .centrality import (
     eigenvector_centrality,
 )
 from .clustering import average_clustering, local_clustering
-from .community import communities, modularity
+from .community import communities, label_propagation, modularity
 from .dfs import dfs_path, dfs_traversal
 from .mst import kruskal_mst, mst_weight
 from .hits import hits
@@ -38,6 +38,7 @@ __all__ = [
     "local_clustering",
     "average_clustering",
     "communities",
+    "label_propagation",
     "modularity",
     "dfs_traversal",
     "dfs_path",
