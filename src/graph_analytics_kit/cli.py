@@ -15,7 +15,7 @@ from .centrality import (
     pagerank,
 )
 from .clustering import average_clustering, local_clustering
-from .community import communities, modularity
+from .community import communities, label_propagation, modularity
 from .graph import Graph, karate_club
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
 
@@ -63,6 +63,24 @@ def _build_parser() -> argparse.ArgumentParser:
 
     comm = sub.add_parser("communities", help="Print detected communities")
     _add_graph_args(comm)
+    comm.add_argument(
+        "--method",
+        choices=["louvain", "label-propagation"],
+        default="louvain",
+        help="Community algorithm (default: louvain)",
+    )
+    comm.add_argument(
+        "--max-iter",
+        type=int,
+        default=None,
+        help="Maximum sweeps (default: 100)",
+    )
+    comm.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="RNG seed for shuffled sweeps (label propagation and Louvain)",
+    )
 
     sp = sub.add_parser("shortest-path", help="Print Dijkstra shortest paths")
     _add_graph_args(sp)
@@ -142,7 +160,18 @@ def cmd_clustering(args: argparse.Namespace) -> int:
 
 def cmd_communities(args: argparse.Namespace) -> int:
     g = _load_graph(args)
-    parts = communities(g)
+    kwargs = {}
+    if args.max_iter is not None:
+        kwargs["max_iter"] = args.max_iter
+    if args.seed is not None:
+        kwargs["seed"] = args.seed
+    if args.method == "label-propagation":
+        parts = label_propagation(g, **kwargs)
+        method_name = "label propagation"
+    else:
+        parts = communities(g, **kwargs)
+        method_name = "louvain"
+    print(f"method: {method_name}")
     print(f"n_communities: {len(parts)}")
     print(f"modularity: {modularity(g, parts):.6f}")
     for index, part in enumerate(parts):
@@ -179,6 +208,7 @@ def _compose_report(g: Graph) -> str:
     cores = core_number(g)
     lc = local_clustering(g)
     parts = communities(g)
+    lpa_parts = label_propagation(g)
     dist, prev = dijkstra_shortest_path(g, 0, target=33)
     path_to_33 = reconstruct_path(prev, 0, 33)
     comm_of = {node: index for index, part in enumerate(parts) for node in part}
@@ -196,6 +226,8 @@ def _compose_report(g: Graph) -> str:
         f"- Average clustering: {average_clustering(g):.6f}",
         f"- Communities (Louvain): {len(parts)}",
         f"- Modularity: {modularity(g, parts):.6f}",
+        f"- Communities (label propagation): {len(lpa_parts)}",
+        f"- Label-propagation modularity: {modularity(g, lpa_parts):.6f}",
         "",
         "## Centrality (top 5)",
         "",
@@ -223,6 +255,21 @@ def _compose_report(g: Graph) -> str:
         ]
     )
     for index, part in enumerate(parts):
+        members = ", ".join(str(node) for node in part)
+        lines.append(f"| {index} | {len(part)} | {members} |")
+    lines.extend(
+        [
+            "",
+            "### Label propagation",
+            "",
+            "Asynchronous label propagation on the same graph. With no seed, "
+            "sweeps follow increasing degree then node label.",
+            "",
+            "| Community | Size | Nodes |",
+            "|-----------|------|-------|",
+        ]
+    )
+    for index, part in enumerate(lpa_parts):
         members = ", ".join(str(node) for node in part)
         lines.append(f"| {index} | {len(part)} | {members} |")
     hop_path = " -> ".join(str(node) for node in path_to_33)

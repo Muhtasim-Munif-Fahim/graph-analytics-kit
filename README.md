@@ -4,8 +4,9 @@ A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, betweenness, PageRank, eigenvector, Katz, and HITS
 hubs/authorities), k-core numbers, Dijkstra shortest paths, clustering
-coefficients, community detection (Louvain), link-prediction scores, AUC
-evaluation, and a command-line entry point that runs an end-to-end
+coefficients, community detection (Louvain and label propagation),
+link-prediction scores, AUC evaluation, and a command-line entry point
+that runs an end-to-end
 analysis on the classic Zachary's Karate Club network.
 
 ## Install
@@ -26,6 +27,7 @@ from graph_analytics_kit import (
     eigenvector_centrality,
     hits,
     katz_centrality,
+    label_propagation,
     local_clustering,
     pagerank,
     reconstruct_path,
@@ -41,13 +43,24 @@ hubs, authorities = hits(g)
 print(hubs[0], authorities[0])
 print(core_number(g)[0])
 print(communities(g))
+print(label_propagation(g))
 dist, prev = dijkstra_shortest_path(g, 0)
 print(dist[33], reconstruct_path(prev, 0, 33))
 ```
 
 `communities(g)` runs Louvain modularity maximization and returns a
 partition (lists of node labels). `modularity(g, parts)` scores that
-partition. `dijkstra_shortest_path(g, source)` returns distances and
+partition. `label_propagation(g, max_iter=100, seed=None)` runs
+asynchronous label propagation and returns communities in that same
+format: members sorted, communities ordered by their smallest node
+label. Pass `return_labels=True` to also receive the node-to-label map
+(surviving propagated ids, not renumbered community indexes). With
+`seed` unset, each sweep visits nodes in increasing neighbor count,
+then node label, and a tie keeps the current label or else takes the
+smallest label, so the result is deterministic. A seed shuffles each
+sweep and breaks remaining ties at random, reproducibly. Edge weights
+vote for the neighbor's label; self-loops are ignored. Isolated nodes
+stay singletons. `dijkstra_shortest_path(g, source)` returns distances and
 predecessors; `reconstruct_path` rebuilds a concrete path.
 `eigenvector_centrality(g)` returns the L2-normalized principal
 eigenvector of the adjacency matrix (power iteration).
@@ -84,6 +97,7 @@ graph-analytics centrality --measure hubs
 graph-analytics centrality --measure authorities
 graph-analytics centrality --measure core
 graph-analytics communities
+graph-analytics communities --method label-propagation --seed 0
 graph-analytics shortest-path --source 0 --target 33
 ```
 
