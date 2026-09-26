@@ -9,6 +9,7 @@ from graph_analytics_kit.centrality import (
     closeness_centrality,
     degree_centrality,
     degree_centrality_array,
+    harmonic_centrality,
 )
 
 
@@ -113,3 +114,62 @@ def test_closeness_centrality_single_node() -> None:
     g = Graph()
     cc = closeness_centrality(g)
     assert cc == {}
+
+
+def test_harmonic_centrality_star() -> None:
+    g = _star()
+    hc = harmonic_centrality(g)
+    # Center: dists 1,1,1 → 1+1+1 = 3.0
+    # Leaf: dists 1 (to center) + 2 + 2 → 1 + 0.5 + 0.5 = 2.0
+    assert abs(hc[0] - 3.0) < 1e-9
+    assert abs(hc[1] - 2.0) < 1e-9
+    assert abs(hc[2] - 2.0) < 1e-9
+    assert abs(hc[3] - 2.0) < 1e-9
+
+
+def test_harmonic_centrality_path() -> None:
+    g = _path()
+    hc = harmonic_centrality(g)
+    # Node 0: dists 1,2,3 → 1 + 0.5 + 1/3 = 1.833...
+    assert abs(hc[0] - (1.0 + 0.5 + 1.0 / 3.0)) < 1e-9
+    # Node 1: dists 1,1,2 → 1 + 1 + 0.5 = 2.5
+    assert abs(hc[1] - 2.5) < 1e-9
+    # Node 2: symmetric to node 1
+    assert abs(hc[2] - 2.5) < 1e-9
+    # Node 3: symmetric to node 0
+    assert abs(hc[3] - (1.0 + 0.5 + 1.0 / 3.0)) < 1e-9
+
+
+def test_harmonic_centrality_triangle() -> None:
+    g = _triangle()
+    hc = harmonic_centrality(g)
+    # Each node reaches two others at distance 1 → score 2.0
+    assert abs(hc[0] - 2.0) < 1e-9
+    assert abs(hc[1] - 2.0) < 1e-9
+    assert abs(hc[2] - 2.0) < 1e-9
+
+
+def test_harmonic_centrality_isolated_and_disconnected() -> None:
+    g = Graph()
+    g.add_node(0)
+    g.add_node(1)
+    g.add_edge(0, 1)
+    g.add_node(2)  # isolated
+    hc = harmonic_centrality(g)
+    assert abs(hc[0] - 1.0) < 1e-9
+    assert abs(hc[1] - 1.0) < 1e-9
+    assert hc[2] == 0.0
+
+
+def test_harmonic_centrality_single_node() -> None:
+    g = Graph()
+    g.add_node(7)
+    hc = harmonic_centrality(g)
+    assert hc == {7: 0.0}
+
+
+def test_harmonic_exported() -> None:
+    from graph_analytics_kit import harmonic_centrality as exported
+
+    g = _star()
+    assert exported(g)[0] == 3.0

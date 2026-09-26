@@ -40,6 +40,31 @@ def closeness_centrality(g: Graph) -> Dict[int, float]:
     return result
 
 
+
+def harmonic_centrality(g: Graph) -> Dict[int, float]:
+    """Return the harmonic centrality for each node.
+
+    Harmonic centrality is the sum of reciprocal shortest-path distances
+    ``sum_{v != u} 1 / d(u, v)`` over nodes reachable from ``u``. Isolated
+    nodes (and nodes that reach nobody) receive a score of ``0.0``. Unlike
+    closeness, harmonic centrality stays well-defined on disconnected
+    graphs because unreachable pairs contribute nothing rather than
+    forcing the whole sum to zero.
+    """
+    n = g.number_of_nodes()
+    if n <= 1:
+        return {node: 0.0 for node in g.nodes}
+    result: Dict[int, float] = {}
+    for source in g.nodes:
+        dist = _bfs_distances(g, source)
+        total = 0.0
+        for d in dist.values():
+            if d > 0:
+                total += 1.0 / d
+        result[source] = total
+    return result
+
+
 def betweenness_centrality(g: Graph, normalized: bool = True) -> Dict[int, float]:
     """Return the betweenness centrality for each node using Brandes' algorithm.
 
@@ -117,6 +142,7 @@ __all__ = [
     "degree_centrality",
     "degree_centrality_array",
     "closeness_centrality",
+    "harmonic_centrality",
     "betweenness_centrality",
     "pagerank",
     "eigenvector_centrality",

@@ -2,7 +2,7 @@
 
 A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
-(degree, closeness, betweenness, PageRank, eigenvector, Katz, and HITS
+(degree, closeness, harmonic, betweenness, PageRank, eigenvector, Katz, and HITS
 hubs/authorities), k-core numbers, Dijkstra shortest paths, clustering
 coefficients, community detection (Louvain and label propagation),
 link-prediction scores, AUC evaluation, and a command-line entry point
@@ -25,6 +25,7 @@ from graph_analytics_kit import (
     degree_centrality,
     dijkstra_shortest_path,
     eigenvector_centrality,
+    harmonic_centrality,
     hits,
     katz_centrality,
     label_propagation,
@@ -38,6 +39,7 @@ print(degree_centrality(g)[0])
 print(local_clustering(g)[0])
 print(pagerank(g)[0])
 print(eigenvector_centrality(g)[0])
+print(harmonic_centrality(g)[0])
 print(katz_centrality(g, alpha=0.1)[0])
 hubs, authorities = hits(g)
 print(hubs[0], authorities[0])
@@ -73,24 +75,27 @@ L2-normalized by default; pass `normalized=False` for the raw solution.
 `hits(g)` returns Kleinberg hub and authority scores (L2-normalized);
 betweenness already ships via Brandes, so HITS is the additional
 link-analysis measure.
+
+`harmonic_centrality(g)` returns the sum of reciprocal shortest-path
+distances `sum 1/d(u,v)` over reachable nodes `v ≠ u`. Isolated nodes
+score `0.0`. Unlike closeness, harmonic centrality is well-defined on
+disconnected graphs because unreachable pairs simply contribute nothing.
+
 `core_number(g)` returns the k-core number of each node (the largest `k`
 such that the node sits in a subgraph of minimum degree `k`).
 
-## Pivot: k-core instead of another closeness
+## k-core decomposition
 
-Closeness centrality is already implemented as `closeness_centrality`:
-Wasserman–Faust closeness, `(n - 1) / sum of shortest-path distances`,
-with isolated nodes (and nodes that reach nobody) scoring `0.0`. Brandes
-betweenness is also already implemented and was not rewritten. This change
-adds k-core decomposition instead of a second closeness (or harmonic
-closeness) implementation. `core_number` uses the Batagelj–Zaversnik
-bin-sort. Edge weights and self-loops are ignored. On a directed graph the
-core numbers are those of the underlying simple undirected graph.
+`core_number` uses the Batagelj–Zaversnik bin-sort. Edge weights and
+self-loops are ignored. On a directed graph the core numbers are those of
+the underlying simple undirected graph. Harmonic centrality is provided
+separately as `harmonic_centrality` (sum of inverse distances).
 
 ## Console script
 
 ```bash
 graph-analytics demo -o report.md
+graph-analytics centrality --measure harmonic
 graph-analytics centrality --measure eigenvector
 graph-analytics centrality --measure katz --alpha 0.1
 graph-analytics centrality --measure hubs
