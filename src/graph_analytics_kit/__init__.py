@@ -11,6 +11,7 @@ from .centrality import (
     degree_centrality,
     degree_centrality_array,
     eigenvector_centrality,
+    harmonic_centrality,
 )
 from .clustering import average_clustering, local_clustering
 from .community import communities, label_propagation, modularity
@@ -29,6 +30,7 @@ __all__ = [
     "degree_centrality",
     "degree_centrality_array",
     "closeness_centrality",
+    "harmonic_centrality",
     "betweenness_centrality",
     "pagerank",
     "eigenvector_centrality",

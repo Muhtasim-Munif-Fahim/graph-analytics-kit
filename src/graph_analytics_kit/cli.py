@@ -10,6 +10,7 @@ from .centrality import (
     core_number,
     degree_centrality,
     eigenvector_centrality,
+    harmonic_centrality,
     hits,
     katz_centrality,
     pagerank,
@@ -40,6 +41,7 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=[
             "degree",
             "closeness",
+            "harmonic",
             "betweenness",
             "pagerank",
             "eigenvector",
@@ -128,6 +130,7 @@ def cmd_centrality(args: argparse.Namespace) -> int:
     measures = {
         "degree": degree_centrality,
         "closeness": closeness_centrality,
+        "harmonic": harmonic_centrality,
         "betweenness": betweenness_centrality,
         "pagerank": pagerank,
         "eigenvector": eigenvector_centrality,
@@ -200,6 +203,7 @@ def cmd_shortest_path(args: argparse.Namespace) -> int:
 def _compose_report(g: Graph) -> str:
     dc = degree_centrality(g)
     cc = closeness_centrality(g)
+    hc = harmonic_centrality(g)
     bc = betweenness_centrality(g)
     pr = pagerank(g)
     ev = eigenvector_centrality(g)
@@ -231,13 +235,13 @@ def _compose_report(g: Graph) -> str:
         "",
         "## Centrality (top 5)",
         "",
-        "| Node | Degree | Closeness | Betweenness | Core | PageRank | Eigenvector | Katz | Hub | Authority | Clustering | Community |",
-        "|------|--------|-----------|-------------|------|----------|-------------|------|-----|-----------|------------|-----------|",
+        "| Node | Degree | Closeness | Harmonic | Betweenness | Core | PageRank | Eigenvector | Katz | Hub | Authority | Clustering | Community |",
+        "|------|--------|-----------|----------|-------------|------|----------|-------------|------|-----|-----------|------------|-----------|",
     ]
     dc_ranked = sorted(dc.items(), key=lambda x: x[1], reverse=True)
     for node, score in dc_ranked[:5]:
         lines.append(
-            f"| {node} | {dc[node]:.4f} | {cc[node]:.6f} | {bc[node]:.6f} | "
+            f"| {node} | {dc[node]:.4f} | {cc[node]:.6f} | {hc[node]:.6f} | {bc[node]:.6f} | "
             f"{cores[node]} | {pr[node]:.6f} | {ev[node]:.6f} | {kz[node]:.6f} | "
             f"{hubs[node]:.6f} | {authorities[node]:.6f} | {lc[node]:.6f} | "
             f"{comm_of[node]} |"
