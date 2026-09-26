@@ -16,7 +16,7 @@ from .centrality import (
     pagerank,
 )
 from .clustering import average_clustering, local_clustering
-from .community import communities, label_propagation, modularity
+from .community import communities, girvan_newman, label_propagation, modularity
 from .graph import Graph, karate_club
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
 
@@ -67,7 +67,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_graph_args(comm)
     comm.add_argument(
         "--method",
-        choices=["louvain", "label-propagation"],
+        choices=["louvain", "label-propagation", "girvan-newman"],
         default="louvain",
         help="Community algorithm (default: louvain)",
     )
@@ -82,6 +82,12 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help="RNG seed for shuffled sweeps (label propagation and Louvain)",
+    )
+    comm.add_argument(
+        "--n-communities",
+        type=int,
+        default=None,
+        help="Target community count for Girvan–Newman (default: best modularity)",
     )
 
     sp = sub.add_parser("shortest-path", help="Print Dijkstra shortest paths")
@@ -171,6 +177,12 @@ def cmd_communities(args: argparse.Namespace) -> int:
     if args.method == "label-propagation":
         parts = label_propagation(g, **kwargs)
         method_name = "label propagation"
+    elif args.method == "girvan-newman":
+        gn_kwargs = {}
+        if args.n_communities is not None:
+            gn_kwargs["n_communities"] = args.n_communities
+        parts = girvan_newman(g, **gn_kwargs)
+        method_name = "girvan-newman"
     else:
         parts = communities(g, **kwargs)
         method_name = "louvain"
