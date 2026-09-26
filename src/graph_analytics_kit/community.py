@@ -1,8 +1,8 @@
-"""Community detection: Louvain modularity and label propagation."""
+"""Community detection: Louvain, Girvan–Newman, and label propagation."""
 from __future__ import annotations
 
 import random
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from .graph import Graph
@@ -113,6 +113,159 @@ def modularity(g: Graph, parts: Sequence[Iterable[int]]) -> float:
     for community_id in set(comm.values()):
         quality += internal[community_id] / m - (degree_sum[community_id] / two_m) ** 2
     return quality
+
+
+
+def girvan_newman(
+    g: Graph,
+    *,
+    n_communities: Optional[int] = None,
+) -> List[List[int]]:
+    """Detect communities with the Girvan–Newman edge-betweenness method.
+
+    Iteratively removes the edge with the highest betweenness centrality
+    (Girvan & Newman, 2002). Betweenness is recomputed after every removal.
+    When *n_communities* is ``None`` the dendrogram level with the highest
+    Newman modularity is returned; otherwise removal stops as soon as that
+    many connected components exist. Isolated nodes remain their own
+    community. Directed graphs are not supported. Ties among equal
+    betweenness edges break by ascending ``(min(u, v), max(u, v))``.
+
+    Parameters
+    ----------
+    g:
+        Undirected input graph.
+    n_communities:
+        Optional target community count. Must be at least 1 and at most
+        the number of nodes when set.
+
+    Returns
+    -------
+    list[list[int]]
+        Communities as lists of node labels. Nodes within a community are
+        sorted, and communities are ordered by their smallest node label.
+    """
+    if g.directed:
+        raise ValueError("girvan_newman() requires an undirected graph")
+    nodes = g.nodes
+    if not nodes:
+        return []
+    if n_communities is not None:
+        if (
+            not isinstance(n_communities, int)
+            or isinstance(n_communities, bool)
+            or n_communities < 1
+            or n_communities > len(nodes)
+        ):
+            raise ValueError(
+                "n_communities must be an integer between 1 and the number of nodes"
+            )
+
+    # Work on a mutable adjacency copy (ignore self-loops for splitting).
+    adj: Dict[int, Dict[int, float]] = {node: {} for node in nodes}
+    for u, v, weight in g.edges:
+        if u == v:
+            continue
+        adj[u][v] = adj[u].get(v, 0.0) + weight
+        adj[v][u] = adj[v].get(u, 0.0) + weight
+
+    def components() -> List[List[int]]:
+        seen = set()
+        parts: List[List[int]] = []
+        for start in sorted(nodes):
+            if start in seen:
+                continue
+            stack = [start]
+            seen.add(start)
+            comp = []
+            while stack:
+                node = stack.pop()
+                comp.append(node)
+                for nbr in adj[node]:
+                    if nbr not in seen:
+                        seen.add(nbr)
+                        stack.append(nbr)
+            parts.append(sorted(comp))
+        parts.sort(key=lambda part: part[0])
+        return parts
+
+    # Original Graph for modularity scoring (edge set does not change).
+    best_parts = components()
+    best_q = modularity(g, best_parts)
+
+    while True:
+        parts = components()
+        if n_communities is not None and len(parts) >= n_communities:
+            return parts
+        q = modularity(g, parts)
+        if q >= best_q:
+            best_q = q
+            best_parts = parts
+
+        # Count remaining undirected edges.
+        n_edges = sum(len(nbrs) for nbrs in adj.values()) // 2
+        if n_edges == 0:
+            break
+
+        betweenness = _edge_betweenness(adj)
+        # Highest betweenness; ties break by ascending endpoint pair.
+        edge, _score = max(
+            betweenness.items(),
+            key=lambda item: (item[1], -item[0][0], -item[0][1]),
+        )
+        u, v = edge
+        adj[u].pop(v, None)
+        adj[v].pop(u, None)
+
+    if n_communities is not None:
+        return components()
+    return best_parts
+
+
+def _edge_betweenness(adj: Dict[int, Dict[int, float]]) -> Dict[Tuple[int, int], float]:
+    """Brandes edge betweenness on an unweighted view of *adj*.
+
+    Edge weights are ignored for path length (hop count), matching the
+    classic Girvan–Newman formulation. Each undirected edge is keyed as
+    ``(min(u, v), max(u, v))``.
+    """
+    nodes = list(adj.keys())
+    betweenness: Dict[Tuple[int, int], float] = defaultdict(float)
+    for source in nodes:
+        # BFS layering
+        S: list[int] = []
+        P: Dict[int, list[int]] = {node: [] for node in nodes}
+        sigma: Dict[int, float] = {node: 0.0 for node in nodes}
+        sigma[source] = 1.0
+        dist: Dict[int, int] = {node: -1 for node in nodes}
+        dist[source] = 0
+        queue: deque[int] = deque([source])
+        while queue:
+            v = queue.popleft()
+            S.append(v)
+            for w in adj[v]:
+                if dist[w] < 0:
+                    queue.append(w)
+                    dist[w] = dist[v] + 1
+                if dist[w] == dist[v] + 1:
+                    sigma[w] += sigma[v]
+                    P[w].append(v)
+
+        delta: Dict[int, float] = {node: 0.0 for node in nodes}
+        while S:
+            w = S.pop()
+            for v in P[w]:
+                if sigma[w] == 0.0:
+                    continue
+                c = (sigma[v] / sigma[w]) * (1.0 + delta[w])
+                edge = (v, w) if v < w else (w, v)
+                betweenness[edge] += c
+                delta[v] += c
+
+    # Undirected: Brandes counts each edge once per directed traversal pair;
+    # divide by 2 to match the undirected convention.
+    return {edge: value / 2.0 for edge, value in betweenness.items()}
+
 
 
 def label_propagation(
@@ -320,4 +473,4 @@ def _partition_map(
     return comm
 
 
-__all__ = ["communities", "label_propagation", "modularity"]
+__all__ = ["communities", "girvan_newman", "label_propagation", "modularity"]

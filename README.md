@@ -4,7 +4,7 @@ A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, harmonic, betweenness, PageRank, eigenvector, Katz, and HITS
 hubs/authorities), k-core numbers, Dijkstra shortest paths, clustering
-coefficients, community detection (Louvain and label propagation),
+coefficients, community detection (Louvain, Girvan–Newman, and label propagation),
 link-prediction scores, AUC evaluation, and a command-line entry point
 that runs an end-to-end
 analysis on the classic Zachary's Karate Club network.
@@ -28,6 +28,7 @@ from graph_analytics_kit import (
     harmonic_centrality,
     hits,
     katz_centrality,
+    girvan_newman,
     label_propagation,
     local_clustering,
     pagerank,
@@ -46,13 +47,17 @@ print(hubs[0], authorities[0])
 print(core_number(g)[0])
 print(communities(g))
 print(label_propagation(g))
+print(girvan_newman(g, n_communities=2))
 dist, prev = dijkstra_shortest_path(g, 0)
 print(dist[33], reconstruct_path(prev, 0, 33))
 ```
 
 `communities(g)` runs Louvain modularity maximization and returns a
 partition (lists of node labels). `modularity(g, parts)` scores that
-partition. `label_propagation(g, max_iter=100, seed=None)` runs
+partition. `girvan_newman(g, n_communities=None)` removes high-
+betweenness edges until the target community count is reached (or, when
+`n_communities` is unset, until modularity along the dendrogram peaks).
+`label_propagation(g, max_iter=100, seed=None)` runs
 asynchronous label propagation and returns communities in that same
 format: members sorted, communities ordered by their smallest node
 label. Pass `return_labels=True` to also receive the node-to-label map
