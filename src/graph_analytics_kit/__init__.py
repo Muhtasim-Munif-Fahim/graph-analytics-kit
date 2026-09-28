@@ -13,6 +13,7 @@ from .centrality import (
     eigenvector_centrality,
     harmonic_centrality,
 )
+from .assortativity import degree_assortativity
 from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity
 from .dfs import dfs_path, dfs_traversal
@@ -39,6 +40,7 @@ __all__ = [
     "core_number",
     "local_clustering",
     "average_clustering",
+    "degree_assortativity",
     "communities",
     "girvan_newman",
     "label_propagation",
