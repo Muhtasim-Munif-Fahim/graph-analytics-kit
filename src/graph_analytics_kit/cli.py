@@ -15,6 +15,7 @@ from .centrality import (
     katz_centrality,
     pagerank,
 )
+from .assortativity import degree_assortativity
 from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity
 from .graph import Graph, karate_club
@@ -128,6 +129,7 @@ def cmd_stats(args: argparse.Namespace) -> int:
     s = g.summary()
     for key, value in s.items():
         print(f"{key}: {value}")
+    print(f"degree_assortativity: {degree_assortativity(g):.6f}")
     return 0
 
 
@@ -160,6 +162,7 @@ def cmd_clustering(args: argparse.Namespace) -> int:
     g = _load_graph(args)
     avg = average_clustering(g)
     print(f"average_clustering: {avg:.6f}")
+    print(f"degree_assortativity: {degree_assortativity(g):.6f}")
     lc = local_clustering(g)
     ranked = sorted(lc.items(), key=lambda x: x[1], reverse=True)
     for node, score in ranked[:5]:
@@ -240,6 +243,7 @@ def _compose_report(g: Graph) -> str:
         f"- Density: {g.density():.4f}",
         f"- Connected: {g.is_connected()}",
         f"- Average clustering: {average_clustering(g):.6f}",
+        f"- Degree assortativity: {degree_assortativity(g):.6f}",
         f"- Communities (Louvain): {len(parts)}",
         f"- Modularity: {modularity(g, parts):.6f}",
         f"- Communities (label propagation): {len(lpa_parts)}",

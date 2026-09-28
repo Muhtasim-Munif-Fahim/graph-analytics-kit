@@ -4,7 +4,7 @@ A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, harmonic, betweenness, PageRank, eigenvector, Katz, and HITS
 hubs/authorities), k-core numbers, Dijkstra shortest paths, clustering
-coefficients, community detection (Louvain, Girvan–Newman, and label propagation),
+coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, and label propagation),
 link-prediction scores, AUC evaluation, and a command-line entry point
 that runs an end-to-end
 analysis on the classic Zachary's Karate Club network.
@@ -30,6 +30,7 @@ from graph_analytics_kit import (
     katz_centrality,
     girvan_newman,
     label_propagation,
+    degree_assortativity,
     local_clustering,
     pagerank,
     reconstruct_path,
@@ -38,6 +39,7 @@ from graph_analytics_kit import (
 g = Graph.karate_club()
 print(degree_centrality(g)[0])
 print(local_clustering(g)[0])
+print(degree_assortativity(g))
 print(pagerank(g)[0])
 print(eigenvector_centrality(g)[0])
 print(harmonic_centrality(g)[0])
@@ -86,6 +88,9 @@ distances `sum 1/d(u,v)` over reachable nodes `v ≠ u`. Isolated nodes
 score `0.0`. Unlike closeness, harmonic centrality is well-defined on
 disconnected graphs because unreachable pairs simply contribute nothing.
 
+
+`degree_assortativity(g)` returns Newman's degree assortativity coefficient: the Pearson correlation of the degrees at the two ends of every edge. Values near `+1` indicate assortative mixing (high-degree nodes link to high-degree nodes); values near `-1` indicate disassortative mixing. Returns `0.0` when the coefficient is undefined (too few edges or zero degree variance).
+
 `core_number(g)` returns the k-core number of each node (the largest `k`
 such that the node sits in a subgraph of minimum degree `k`).
 
@@ -106,6 +111,7 @@ graph-analytics centrality --measure katz --alpha 0.1
 graph-analytics centrality --measure hubs
 graph-analytics centrality --measure authorities
 graph-analytics centrality --measure core
+graph-analytics clustering
 graph-analytics communities
 graph-analytics communities --method label-propagation --seed 0
 graph-analytics shortest-path --source 0 --target 33
