@@ -4,7 +4,7 @@ A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, harmonic, betweenness, PageRank, eigenvector, Katz, and HITS
 hubs/authorities), k-core numbers, Dijkstra shortest paths, clustering
-coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, and label propagation),
+coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, label propagation, and spectral clustering),
 link-prediction scores, AUC evaluation, and a command-line entry point
 that runs an end-to-end
 analysis on the classic Zachary's Karate Club network.
@@ -30,6 +30,7 @@ from graph_analytics_kit import (
     katz_centrality,
     girvan_newman,
     label_propagation,
+    spectral_clustering,
     degree_assortativity,
     local_clustering,
     pagerank,
@@ -50,6 +51,7 @@ print(core_number(g)[0])
 print(communities(g))
 print(label_propagation(g))
 print(girvan_newman(g, n_communities=2))
+print(spectral_clustering(g, n_communities=2))
 dist, prev = dijkstra_shortest_path(g, 0)
 print(dist[33], reconstruct_path(prev, 0, 33))
 ```
@@ -62,7 +64,7 @@ betweenness edges until the target community count is reached (or, when
 `label_propagation(g, max_iter=100, seed=None)` runs
 asynchronous label propagation and returns communities in that same
 format: members sorted, communities ordered by their smallest node
-label. Pass `return_labels=True` to also receive the node-to-label map
+label. `spectral_clustering(g, n_communities=k, seed=None, normalized=True)` embeds nodes with the `k` smallest Laplacian eigenvectors (`L_sym` by default, or unnormalized `L = D - A` when `normalized=False`) and runs k-means on the rows, returning the same partition format. Pass `return_labels=True` to also receive the node-to-label map
 (surviving propagated ids, not renumbered community indexes). With
 `seed` unset, each sweep visits nodes in increasing neighbor count,
 then node label, and a tie keeps the current label or else takes the
@@ -114,6 +116,7 @@ graph-analytics centrality --measure core
 graph-analytics clustering
 graph-analytics communities
 graph-analytics communities --method label-propagation --seed 0
+graph-analytics communities --method spectral --n-communities 2
 graph-analytics shortest-path --source 0 --target 33
 ```
 

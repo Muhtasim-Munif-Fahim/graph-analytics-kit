@@ -17,7 +17,7 @@ from .centrality import (
 )
 from .assortativity import degree_assortativity
 from .clustering import average_clustering, local_clustering
-from .community import communities, girvan_newman, label_propagation, modularity
+from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .graph import Graph, karate_club
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
 
@@ -68,7 +68,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_graph_args(comm)
     comm.add_argument(
         "--method",
-        choices=["louvain", "label-propagation", "girvan-newman"],
+        choices=["louvain", "label-propagation", "girvan-newman", "spectral"],
         default="louvain",
         help="Community algorithm (default: louvain)",
     )
@@ -88,7 +88,19 @@ def _build_parser() -> argparse.ArgumentParser:
         "--n-communities",
         type=int,
         default=None,
-        help="Target community count for Girvan–Newman (default: best modularity)",
+        help="Target community count for Girvan–Newman / spectral (default: best modularity for GN; required for spectral)",
+    )
+    comm.add_argument(
+        "--normalized",
+        action="store_true",
+        default=True,
+        help="Use normalized Laplacian for spectral clustering (default)",
+    )
+    comm.add_argument(
+        "--unnormalized",
+        action="store_true",
+        default=False,
+        help="Use unnormalized Laplacian L=D-A for spectral clustering",
     )
 
     sp = sub.add_parser("shortest-path", help="Print Dijkstra shortest paths")
@@ -186,6 +198,15 @@ def cmd_communities(args: argparse.Namespace) -> int:
             gn_kwargs["n_communities"] = args.n_communities
         parts = girvan_newman(g, **gn_kwargs)
         method_name = "girvan-newman"
+    elif args.method == "spectral":
+        n_comm = args.n_communities if args.n_communities is not None else 2
+        sc_kwargs = {"n_communities": n_comm, "normalized": not args.unnormalized}
+        if args.seed is not None:
+            sc_kwargs["seed"] = args.seed
+        if args.max_iter is not None:
+            sc_kwargs["max_iter"] = args.max_iter
+        parts = spectral_clustering(g, **sc_kwargs)
+        method_name = "spectral"
     else:
         parts = communities(g, **kwargs)
         method_name = "louvain"
