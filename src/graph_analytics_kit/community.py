@@ -1,9 +1,11 @@
-"""Community detection: Louvain, Girvan–Newman, and label propagation."""
+"""Community detection: Louvain, Girvan–Newman, label propagation, and spectral clustering."""
 from __future__ import annotations
 
 import random
 from collections import defaultdict, deque
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
+
+import numpy as np
 
 from .graph import Graph
 
@@ -473,4 +475,163 @@ def _partition_map(
     return comm
 
 
-__all__ = ["communities", "girvan_newman", "label_propagation", "modularity"]
+
+def spectral_clustering(
+    g: Graph,
+    *,
+    n_communities: int,
+    seed: Optional[int] = None,
+    normalized: bool = True,
+    max_iter: int = 100,
+) -> List[List[int]]:
+    """Detect communities with spectral clustering on the graph Laplacian.
+
+    Builds the (un)normalized Laplacian of the undirected weighted adjacency,
+    takes the ``n_communities`` eigenvectors belonging to the smallest
+    eigenvalues, and runs Lloyd k-means on the embedding rows (Ng, Jordan,
+    and Weiss, 2002 for the normalized case; Shi and Malik, 2000 style for
+    the unnormalized Laplacian). Directed graphs are not supported.
+
+    Parameters
+    ----------
+    g:
+        Undirected input graph.
+    n_communities:
+        Target number of communities ``k``. Must be an integer between 1 and
+        the number of nodes.
+    seed:
+        Optional RNG seed for k-means centroid initialisation. When ``None``
+        the first embedding row seeds the first centroid and the rest
+        follow farthest-point seeding (deterministic). When set, the
+        first centroid is drawn from *seed* and subsequent ones still
+        use farthest-point seeding.
+    normalized:
+        When ``True`` (default) use the symmetric normalized Laplacian
+        ``L_sym = I - D^{-1/2} A D^{-1/2}``. When ``False`` use the
+        unnormalized combinatorial Laplacian ``L = D - A``. Isolated nodes
+        (zero degree) keep a zero row in ``D^{-1/2}`` so they stay finite.
+    max_iter:
+        Maximum Lloyd k-means iterations.
+
+    Returns
+    -------
+    list[list[int]]
+        Communities as lists of node labels. Nodes within a community are
+        sorted, and communities are ordered by their smallest node label —
+        the same partition format as :func:`communities` and
+        :func:`girvan_newman`.
+    """
+    if g.directed:
+        raise ValueError("spectral_clustering() requires an undirected graph")
+    nodes = g.nodes
+    if not nodes:
+        return []
+    n = len(nodes)
+    if (
+        not isinstance(n_communities, int)
+        or isinstance(n_communities, bool)
+        or n_communities < 1
+        or n_communities > n
+    ):
+        raise ValueError(
+            "n_communities must be an integer between 1 and the number of nodes"
+        )
+    if not isinstance(max_iter, int) or isinstance(max_iter, bool) or max_iter < 1:
+        raise ValueError("max_iter must be a positive integer")
+
+    if n_communities == 1:
+        return [sorted(nodes)]
+    if n_communities == n:
+        return [[node] for node in sorted(nodes)]
+
+    # Adjacency in node-label order (matches Graph.adjacency_matrix).
+    labels = list(nodes)
+    index = {node: i for i, node in enumerate(labels)}
+    adj = np.zeros((n, n), dtype=float)
+    for u, v, weight in g.edges:
+        i, j = index[u], index[v]
+        adj[i, j] += weight
+        if u != v:
+            adj[j, i] += weight
+
+    degree = adj.sum(axis=1)
+    if normalized:
+        # L_sym = I - D^{-1/2} A D^{-1/2}; zero-degree rows stay zero in invsqrt.
+        inv_sqrt = np.zeros(n, dtype=float)
+        positive = degree > 0
+        inv_sqrt[positive] = 1.0 / np.sqrt(degree[positive])
+        scaled = adj * inv_sqrt[np.newaxis, :]
+        scaled = scaled * inv_sqrt[:, np.newaxis]
+        laplacian = np.eye(n, dtype=float) - scaled
+    else:
+        laplacian = np.diag(degree) - adj
+
+    # Symmetric eigendecomposition; take k smallest eigenvectors.
+    eigenvalues, eigenvectors = np.linalg.eigh(laplacian)
+    order = np.argsort(eigenvalues)
+    embedding = np.ascontiguousarray(eigenvectors[:, order[:n_communities]], dtype=float)
+
+    # Row-normalize embedding for normalized spectral clustering (Ng et al.).
+    if normalized:
+        norms = np.linalg.norm(embedding, axis=1, keepdims=True)
+        norms = np.where(norms > 1e-12, norms, 1.0)
+        embedding = embedding / norms
+
+    assignments = _kmeans(embedding, n_communities, seed=seed, max_iter=max_iter)
+    label_map = {labels[i]: int(assignments[i]) for i in range(n)}
+    return _labels_to_communities(label_map)
+
+
+def _kmeans(
+    X: np.ndarray,
+    k: int,
+    *,
+    seed: Optional[int],
+    max_iter: int,
+) -> np.ndarray:
+    """Lloyd k-means on embedding rows. Returns integer cluster ids.
+
+    Centroid initialisation is farthest-point seeding: the first centroid is
+    the first row when *seed* is ``None``, otherwise a uniform draw; each
+    subsequent centroid is the point maximising distance to the nearest
+    already-chosen centroid (ties break by smallest index). This avoids the
+    collapse that occurs when the first ``k`` embedding rows are identical
+    (common on disconnected components).
+    """
+    n = X.shape[0]
+    centroids = np.empty((k, X.shape[1]), dtype=float)
+    chosen = np.empty(k, dtype=np.intp)
+    if seed is None:
+        chosen[0] = 0
+    else:
+        rng = np.random.default_rng(seed)
+        chosen[0] = int(rng.integers(0, n))
+    centroids[0] = X[chosen[0]]
+    min_dist = np.linalg.norm(X - centroids[0], axis=1)
+    for j in range(1, k):
+        # Farthest point; ties → smallest index (np.argmax is stable for that).
+        chosen[j] = int(np.argmax(min_dist))
+        centroids[j] = X[chosen[j]]
+        dist_j = np.linalg.norm(X - centroids[j], axis=1)
+        min_dist = np.minimum(min_dist, dist_j)
+
+    assignments = np.zeros(n, dtype=np.intp)
+    for _ in range(max_iter):
+        # Assign each row to nearest centroid (ties → smallest cluster id).
+        distances = np.linalg.norm(X[:, np.newaxis, :] - centroids[np.newaxis, :, :], axis=2)
+        new_assignments = np.argmin(distances, axis=1)
+        if np.array_equal(new_assignments, assignments):
+            break
+        assignments = new_assignments
+        for cluster in range(k):
+            members = X[assignments == cluster]
+            if members.shape[0] == 0:
+                farthest = int(np.argmax(distances.min(axis=1)))
+                centroids[cluster] = X[farthest]
+                assignments[farthest] = cluster
+            else:
+                centroids[cluster] = members.mean(axis=0)
+    return assignments
+
+
+__all__ = ["communities", "girvan_newman", "label_propagation", "modularity", "spectral_clustering"]

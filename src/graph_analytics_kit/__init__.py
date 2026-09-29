@@ -15,7 +15,7 @@ from .centrality import (
 )
 from .assortativity import degree_assortativity
 from .clustering import average_clustering, local_clustering
-from .community import communities, girvan_newman, label_propagation, modularity
+from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .dfs import dfs_path, dfs_traversal
 from .mst import kruskal_mst, mst_weight
 from .hits import hits
@@ -45,6 +45,7 @@ __all__ = [
     "girvan_newman",
     "label_propagation",
     "modularity",
+    "spectral_clustering",
     "dfs_traversal",
     "dfs_path",
     "kruskal_mst",
