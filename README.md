@@ -32,6 +32,8 @@ from graph_analytics_kit import (
     label_propagation,
     spectral_clustering,
     degree_assortativity,
+    adamic_adar,
+    adamic_adar_scores,
     local_clustering,
     pagerank,
     reconstruct_path,
@@ -41,6 +43,7 @@ g = Graph.karate_club()
 print(degree_centrality(g)[0])
 print(local_clustering(g)[0])
 print(degree_assortativity(g))
+print(adamic_adar(g, 0, 33))
 print(pagerank(g)[0])
 print(eigenvector_centrality(g)[0])
 print(harmonic_centrality(g)[0])
@@ -93,6 +96,8 @@ disconnected graphs because unreachable pairs simply contribute nothing.
 
 `degree_assortativity(g)` returns Newman's degree assortativity coefficient: the Pearson correlation of the degrees at the two ends of every edge. Values near `+1` indicate assortative mixing (high-degree nodes link to high-degree nodes); values near `-1` indicate disassortative mixing. Returns `0.0` when the coefficient is undefined (too few edges or zero degree variance).
 
+`adamic_adar(g, u, v)` returns the Adamic–Adar link-prediction score: the sum of `1 / log(deg(w))` over common neighbors `w` of `u` and `v` (neighbors with degree `≤ 1` are skipped). Higher scores suggest a stronger missing link. `adamic_adar_scores(g, pairs)` evaluates many pairs at once.
+
 `core_number(g)` returns the k-core number of each node (the largest `k`
 such that the node sits in a subgraph of minimum degree `k`).
 
@@ -118,6 +123,8 @@ graph-analytics communities
 graph-analytics communities --method label-propagation --seed 0
 graph-analytics communities --method spectral --n-communities 2
 graph-analytics shortest-path --source 0 --target 33
+graph-analytics link-prediction --u 0 --v 33
+graph-analytics link-prediction --u 0 --v 33 --top-pairs 5
 ```
 
 See `examples/run_demo.py` for a complete end-to-end demo that writes a

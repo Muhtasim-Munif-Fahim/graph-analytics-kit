@@ -1,4 +1,4 @@
-"""Graph analytics: centrality, clustering, and link prediction."""
+"""Graph analytics: centrality, clustering, communities, and link prediction."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from .centrality import (
     harmonic_centrality,
 )
 from .assortativity import degree_assortativity
+from .link_prediction import adamic_adar, adamic_adar_scores
 from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .dfs import dfs_path, dfs_traversal
@@ -41,6 +42,8 @@ __all__ = [
     "local_clustering",
     "average_clustering",
     "degree_assortativity",
+    "adamic_adar",
+    "adamic_adar_scores",
     "communities",
     "girvan_newman",
     "label_propagation",

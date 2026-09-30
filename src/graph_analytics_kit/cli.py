@@ -16,6 +16,7 @@ from .centrality import (
     pagerank,
 )
 from .assortativity import degree_assortativity
+from .link_prediction import adamic_adar, adamic_adar_scores
 from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .graph import Graph, karate_club
@@ -108,6 +109,21 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--source", type=int, default=0, help="Source node label")
     sp.add_argument("--target", type=int, default=None, help="Optional target node")
     sp.add_argument("--top", type=int, default=5, help="Show closest N nodes")
+
+
+    lp = sub.add_parser(
+        "link-prediction",
+        help="Print Adamic–Adar link-prediction scores",
+    )
+    _add_graph_args(lp)
+    lp.add_argument("--u", type=int, required=True, help="First node label")
+    lp.add_argument("--v", type=int, required=True, help="Second node label")
+    lp.add_argument(
+        "--top-pairs",
+        type=int,
+        default=0,
+        help="If >0, also rank this many non-edges by Adamic–Adar (default: 0)",
+    )
 
     return parser
 
@@ -216,6 +232,32 @@ def cmd_communities(args: argparse.Namespace) -> int:
     for index, part in enumerate(parts):
         members = ", ".join(str(node) for node in part)
         print(f"  community {index} (n={len(part)}): {members}")
+    return 0
+
+
+
+def cmd_link_prediction(args: argparse.Namespace) -> int:
+    g = _load_graph(args)
+    score = adamic_adar(g, args.u, args.v)
+    print(f"adamic_adar({args.u}, {args.v}): {score:.6f}")
+    if args.top_pairs and args.top_pairs > 0:
+        nodes = g.nodes
+        existing = {(min(u, v), max(u, v)) for u, v, _w in g.edges}
+        candidates = []
+        for i, u in enumerate(nodes):
+            for v in nodes[i + 1 :]:
+                key = (min(u, v), max(u, v))
+                if key in existing or u == v:
+                    continue
+                candidates.append((u, v))
+        scores = adamic_adar_scores(g, candidates)
+        ranked = sorted(
+            zip(candidates, scores),
+            key=lambda item: (-item[1], item[0][0], item[0][1]),
+        )
+        print(f"top non-edges by Adamic–Adar (n={min(args.top_pairs, len(ranked))}):")
+        for (u, v), s in ranked[: args.top_pairs]:
+            print(f"  ({u}, {v}): {s:.6f}")
     return 0
 
 
@@ -336,6 +378,7 @@ _COMMANDS = {
     "clustering": cmd_clustering,
     "communities": cmd_communities,
     "shortest-path": cmd_shortest_path,
+    "link-prediction": cmd_link_prediction,
 }
 
 
