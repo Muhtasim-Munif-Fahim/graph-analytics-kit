@@ -16,7 +16,7 @@ from .centrality import (
     pagerank,
 )
 from .assortativity import degree_assortativity
-from .link_prediction import adamic_adar, adamic_adar_scores
+from .link_prediction import adamic_adar, adamic_adar_scores, jaccard, jaccard_scores
 from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .graph import Graph, karate_club
@@ -113,7 +113,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     lp = sub.add_parser(
         "link-prediction",
-        help="Print Adamic–Adar link-prediction scores",
+        help="Print Adamic–Adar / Jaccard link-prediction scores",
     )
     _add_graph_args(lp)
     lp.add_argument("--u", type=int, required=True, help="First node label")
@@ -122,7 +122,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--top-pairs",
         type=int,
         default=0,
-        help="If >0, also rank this many non-edges by Adamic–Adar (default: 0)",
+        help="If >0, also rank this many non-edges by the chosen metric (default: 0)",
+    )
+    lp.add_argument(
+        "--metric",
+        choices=["adamic-adar", "jaccard", "both"],
+        default="both",
+        help="Score to print / rank by (default: both for the pair; top-pairs uses adamic-adar unless jaccard)",
     )
 
     return parser
@@ -238,8 +244,13 @@ def cmd_communities(args: argparse.Namespace) -> int:
 
 def cmd_link_prediction(args: argparse.Namespace) -> int:
     g = _load_graph(args)
-    score = adamic_adar(g, args.u, args.v)
-    print(f"adamic_adar({args.u}, {args.v}): {score:.6f}")
+    metric = getattr(args, "metric", "both")
+    if metric in ("adamic-adar", "both"):
+        aa = adamic_adar(g, args.u, args.v)
+        print(f"adamic_adar({args.u}, {args.v}): {aa:.6f}")
+    if metric in ("jaccard", "both"):
+        jc = jaccard(g, args.u, args.v)
+        print(f"jaccard({args.u}, {args.v}): {jc:.6f}")
     if args.top_pairs and args.top_pairs > 0:
         nodes = g.nodes
         existing = {(min(u, v), max(u, v)) for u, v, _w in g.edges}
@@ -250,12 +261,18 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
                 if key in existing or u == v:
                     continue
                 candidates.append((u, v))
-        scores = adamic_adar_scores(g, candidates)
+        rank_metric = "jaccard" if metric == "jaccard" else "adamic-adar"
+        if rank_metric == "jaccard":
+            scores = jaccard_scores(g, candidates)
+            label = "Jaccard"
+        else:
+            scores = adamic_adar_scores(g, candidates)
+            label = "Adamic–Adar"
         ranked = sorted(
             zip(candidates, scores),
             key=lambda item: (-item[1], item[0][0], item[0][1]),
         )
-        print(f"top non-edges by Adamic–Adar (n={min(args.top_pairs, len(ranked))}):")
+        print(f"top non-edges by {label} (n={min(args.top_pairs, len(ranked))}):")
         for (u, v), s in ranked[: args.top_pairs]:
             print(f"  ({u}, {v}): {s:.6f}")
     return 0
