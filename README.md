@@ -34,6 +34,8 @@ from graph_analytics_kit import (
     degree_assortativity,
     adamic_adar,
     adamic_adar_scores,
+    jaccard,
+    jaccard_scores,
     local_clustering,
     pagerank,
     reconstruct_path,
@@ -44,6 +46,7 @@ print(degree_centrality(g)[0])
 print(local_clustering(g)[0])
 print(degree_assortativity(g))
 print(adamic_adar(g, 0, 33))
+print(jaccard(g, 0, 33))
 print(pagerank(g)[0])
 print(eigenvector_centrality(g)[0])
 print(harmonic_centrality(g)[0])
@@ -98,6 +101,8 @@ disconnected graphs because unreachable pairs simply contribute nothing.
 
 `adamic_adar(g, u, v)` returns the Adamic–Adar link-prediction score: the sum of `1 / log(deg(w))` over common neighbors `w` of `u` and `v` (neighbors with degree `≤ 1` are skipped). Higher scores suggest a stronger missing link. `adamic_adar_scores(g, pairs)` evaluates many pairs at once.
 
+`jaccard(g, u, v)` returns the Jaccard coefficient `|N(u) ∩ N(v)| / |N(u) ∪ N(v)|` (0 when the union is empty). `jaccard_scores(g, pairs)` evaluates many pairs at once.
+
 `core_number(g)` returns the k-core number of each node (the largest `k`
 such that the node sits in a subgraph of minimum degree `k`).
 
@@ -124,7 +129,8 @@ graph-analytics communities --method label-propagation --seed 0
 graph-analytics communities --method spectral --n-communities 2
 graph-analytics shortest-path --source 0 --target 33
 graph-analytics link-prediction --u 0 --v 33
-graph-analytics link-prediction --u 0 --v 33 --top-pairs 5
+graph-analytics link-prediction --u 0 --v 33 --metric jaccard
+graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric jaccard
 ```
 
 See `examples/run_demo.py` for a complete end-to-end demo that writes a
