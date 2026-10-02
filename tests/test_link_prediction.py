@@ -1,4 +1,4 @@
-"""Tests for Adamic–Adar and Jaccard link prediction."""
+"""Tests for Adamic–Adar, Jaccard, and Resource Allocation link prediction."""
 from __future__ import annotations
 
 import math
@@ -12,6 +12,8 @@ from graph_analytics_kit import (
     jaccard,
     jaccard_scores,
     karate_club,
+    resource_allocation,
+    resource_allocation_scores,
 )
 
 
@@ -21,6 +23,8 @@ def test_no_common_neighbors() -> None:
     assert adamic_adar(g, 0, 3) == 0.0
     assert jaccard(g, 0, 2) == 0.0
     assert jaccard(g, 0, 3) == 0.0
+    assert resource_allocation(g, 0, 2) == 0.0
+    assert resource_allocation(g, 0, 3) == 0.0
 
 
 def test_missing_nodes() -> None:
@@ -29,6 +33,8 @@ def test_missing_nodes() -> None:
     assert adamic_adar(g, 99, 100) == 0.0
     assert jaccard(g, 0, 99) == 0.0
     assert jaccard(g, 99, 100) == 0.0
+    assert resource_allocation(g, 0, 99) == 0.0
+    assert resource_allocation(g, 99, 100) == 0.0
 
 
 def test_triangle_exact() -> None:
@@ -131,3 +137,59 @@ def test_export_available() -> None:
     assert callable(aas)
     assert callable(jc)
     assert callable(jcs)
+
+
+def test_resource_allocation_triangle_exact() -> None:
+    # Complete triangle: 0 and 1 share neighbor 2 (deg 2) → RA = 1/2
+    g = Graph([(0, 1), (0, 2), (1, 2)])
+    assert resource_allocation(g, 0, 1) == pytest.approx(0.5)
+    assert resource_allocation(g, 1, 0) == pytest.approx(0.5)
+
+
+def test_resource_allocation_star() -> None:
+    # Leaves share center deg 3 → RA = 1/3
+    g = Graph([(0, 1), (0, 2), (0, 3)])
+    assert resource_allocation(g, 1, 2) == pytest.approx(1.0 / 3.0)
+    assert resource_allocation(g, 1, 3) == pytest.approx(1.0 / 3.0)
+
+
+def test_resource_allocation_two_common() -> None:
+    # 0,1 share 2 and 3 (both deg 3) → RA = 1/3 + 1/3
+    g = Graph([(0, 2), (1, 2), (0, 3), (1, 3), (2, 3)])
+    assert resource_allocation(g, 0, 1) == pytest.approx(2.0 / 3.0)
+
+
+def test_resource_allocation_no_common_and_missing() -> None:
+    g = Graph([(0, 1), (2, 3)])
+    assert resource_allocation(g, 0, 2) == 0.0
+    assert resource_allocation(g, 0, 99) == 0.0
+    assert resource_allocation(Graph(), 0, 1) == 0.0
+
+
+def test_resource_allocation_scores_batch() -> None:
+    g = Graph([(0, 1), (0, 2), (1, 2), (2, 3)])
+    pairs = [(0, 1), (0, 3), (1, 3), (0, 99)]
+    scores = resource_allocation_scores(g, pairs)
+    assert len(scores) == 4
+    assert scores[0] == pytest.approx(resource_allocation(g, 0, 1))
+    assert scores[1] == pytest.approx(resource_allocation(g, 0, 3))
+    assert scores[2] == pytest.approx(resource_allocation(g, 1, 3))
+    assert scores[3] == 0.0
+    assert resource_allocation_scores(Graph(), []) == []
+
+
+def test_resource_allocation_karate_finite_and_symmetric() -> None:
+    g = karate_club()
+    s01 = resource_allocation(g, 0, 33)
+    s10 = resource_allocation(g, 33, 0)
+    assert s01 == pytest.approx(s10)
+    assert s01 >= 0.0
+    assert math.isfinite(s01)
+
+
+def test_resource_allocation_export_available() -> None:
+    from graph_analytics_kit import resource_allocation as ra
+    from graph_analytics_kit import resource_allocation_scores as ras
+
+    assert callable(ra)
+    assert callable(ras)
