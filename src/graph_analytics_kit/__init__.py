@@ -14,7 +14,14 @@ from .centrality import (
     harmonic_centrality,
 )
 from .assortativity import degree_assortativity
-from .link_prediction import adamic_adar, adamic_adar_scores, jaccard, jaccard_scores
+from .link_prediction import (
+    adamic_adar,
+    adamic_adar_scores,
+    jaccard,
+    jaccard_scores,
+    resource_allocation,
+    resource_allocation_scores,
+)
 from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .dfs import dfs_path, dfs_traversal
@@ -46,6 +53,8 @@ __all__ = [
     "adamic_adar_scores",
     "jaccard",
     "jaccard_scores",
+    "resource_allocation",
+    "resource_allocation_scores",
     "communities",
     "girvan_newman",
     "label_propagation",

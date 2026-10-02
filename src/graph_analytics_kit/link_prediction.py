@@ -6,7 +6,7 @@ from typing import Iterable, List, Tuple
 
 from .graph import Graph
 
-__all__ = ["adamic_adar", "adamic_adar_scores", "jaccard", "jaccard_scores"]
+__all__ = ["adamic_adar", "adamic_adar_scores", "jaccard", "jaccard_scores", "resource_allocation", "resource_allocation_scores"]
 
 Pair = Tuple[int, int]
 
@@ -138,3 +138,60 @@ def jaccard_scores(
     """
     pair_list: List[Pair] = [(int(u), int(v)) for u, v in pairs]
     return [jaccard(g, u, v) for u, v in pair_list]
+
+
+def resource_allocation(g: Graph, u: int, v: int) -> float:
+    """Return the Resource Allocation index between nodes *u* and *v*.
+
+    The score sums ``1 / deg(w)`` over common neighbors ``w`` of ``u`` and
+    ``v`` (Zhou, Lü & Zhang, 2009). Neighbors with degree ``0`` are skipped.
+    Higher scores indicate a stronger predicted link. The score is symmetric:
+    ``resource_allocation(g, u, v) == resource_allocation(g, v, u)``. When
+    *u* or *v* is missing from *g*, or when the pair shares no eligible
+    common neighbors, the score is ``0.0``.
+
+    Parameters
+    ----------
+    g:
+        Input graph. Directed graphs are treated via each node's
+        out-neighborhood (same convention as :func:`adamic_adar`).
+    u, v:
+        Node labels.
+
+    Returns
+    -------
+    float
+        Non-negative Resource Allocation score.
+    """
+    nodes = set(g.nodes)
+    if u not in nodes or v not in nodes:
+        return 0.0
+    score = 0.0
+    for w in _common_neighbors(g, u, v):
+        deg = g.degree(w)
+        if deg <= 0:
+            continue
+        score += 1.0 / float(deg)
+    return score
+
+
+def resource_allocation_scores(
+    g: Graph,
+    pairs: Iterable[Pair],
+) -> List[float]:
+    """Compute Resource Allocation scores for many node pairs.
+
+    Parameters
+    ----------
+    g:
+        Input graph.
+    pairs:
+        Iterable of ``(u, v)`` node-label pairs.
+
+    Returns
+    -------
+    list[float]
+        Scores in the same order as *pairs*.
+    """
+    pair_list: List[Pair] = [(int(u), int(v)) for u, v in pairs]
+    return [resource_allocation(g, u, v) for u, v in pair_list]
