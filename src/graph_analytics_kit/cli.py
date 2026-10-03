@@ -21,6 +21,8 @@ from .link_prediction import (
     adamic_adar_scores,
     jaccard,
     jaccard_scores,
+    preferential_attachment,
+    preferential_attachment_scores,
     resource_allocation,
     resource_allocation_scores,
 )
@@ -120,7 +122,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     lp = sub.add_parser(
         "link-prediction",
-        help="Print Adamic–Adar / Jaccard / Resource Allocation link-prediction scores",
+        help="Print Adamic–Adar / Jaccard / Resource Allocation / Preferential Attachment link-prediction scores",
     )
     _add_graph_args(lp)
     lp.add_argument("--u", type=int, required=True, help="First node label")
@@ -133,9 +135,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     lp.add_argument(
         "--metric",
-        choices=["adamic-adar", "jaccard", "resource-allocation", "both"],
+        choices=["adamic-adar", "jaccard", "resource-allocation", "preferential-attachment", "both"],
         default="both",
-        help="Score to print / rank by (default: both AA+Jaccard for the pair; top-pairs uses adamic-adar unless jaccard or resource-allocation)",
+        help="Score to print / rank by (default: both AA+Jaccard for the pair; top-pairs uses adamic-adar unless jaccard, resource-allocation, or preferential-attachment)",
     )
 
     return parser
@@ -261,6 +263,9 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
     if metric == "resource-allocation":
         ra = resource_allocation(g, args.u, args.v)
         print(f"resource_allocation({args.u}, {args.v}): {ra:.6f}")
+    if metric == "preferential-attachment":
+        pa = preferential_attachment(g, args.u, args.v)
+        print(f"preferential_attachment({args.u}, {args.v}): {pa:.6f}")
     if args.top_pairs and args.top_pairs > 0:
         nodes = g.nodes
         existing = {(min(u, v), max(u, v)) for u, v, _w in g.edges}
@@ -277,6 +282,9 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
         elif metric == "resource-allocation":
             scores = resource_allocation_scores(g, candidates)
             label = "Resource Allocation"
+        elif metric == "preferential-attachment":
+            scores = preferential_attachment_scores(g, candidates)
+            label = "Preferential Attachment"
         else:
             scores = adamic_adar_scores(g, candidates)
             label = "Adamic–Adar"
