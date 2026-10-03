@@ -19,6 +19,8 @@ from .link_prediction import (
     adamic_adar_scores,
     jaccard,
     jaccard_scores,
+    preferential_attachment,
+    preferential_attachment_scores,
     resource_allocation,
     resource_allocation_scores,
 )
@@ -55,6 +57,8 @@ __all__ = [
     "jaccard_scores",
     "resource_allocation",
     "resource_allocation_scores",
+    "preferential_attachment",
+    "preferential_attachment_scores",
     "communities",
     "girvan_newman",
     "label_propagation",

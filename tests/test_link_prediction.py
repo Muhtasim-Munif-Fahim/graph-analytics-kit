@@ -1,4 +1,4 @@
-"""Tests for Adamic–Adar, Jaccard, and Resource Allocation link prediction."""
+"""Tests for Adamic–Adar, Jaccard, Resource Allocation, and Preferential Attachment link prediction."""
 from __future__ import annotations
 
 import math
@@ -12,6 +12,8 @@ from graph_analytics_kit import (
     jaccard,
     jaccard_scores,
     karate_club,
+    preferential_attachment,
+    preferential_attachment_scores,
     resource_allocation,
     resource_allocation_scores,
 )
@@ -193,3 +195,72 @@ def test_resource_allocation_export_available() -> None:
 
     assert callable(ra)
     assert callable(ras)
+
+
+def test_preferential_attachment_star() -> None:
+    # Star: center deg 3, leaves deg 1 → PA(1,2) = 1*1 = 1; PA(0,1) = 3*1 = 3
+    g = Graph([(0, 1), (0, 2), (0, 3)])
+    assert preferential_attachment(g, 1, 2) == pytest.approx(1.0)
+    assert preferential_attachment(g, 2, 1) == pytest.approx(1.0)
+    assert preferential_attachment(g, 0, 1) == pytest.approx(3.0)
+    assert preferential_attachment(g, 1, 0) == pytest.approx(3.0)
+
+
+def test_preferential_attachment_triangle() -> None:
+    # Complete triangle: every node deg 2 → PA = 4
+    g = Graph([(0, 1), (0, 2), (1, 2)])
+    assert preferential_attachment(g, 0, 1) == pytest.approx(4.0)
+    assert preferential_attachment(g, 1, 0) == pytest.approx(4.0)
+
+
+def test_preferential_attachment_path() -> None:
+    # Path 0-1-2-3: deg(0)=1, deg(1)=2, deg(2)=2, deg(3)=1
+    g = Graph([(0, 1), (1, 2), (2, 3)])
+    assert preferential_attachment(g, 0, 3) == pytest.approx(1.0)
+    assert preferential_attachment(g, 0, 2) == pytest.approx(2.0)
+    assert preferential_attachment(g, 1, 2) == pytest.approx(4.0)
+
+
+def test_preferential_attachment_missing_and_empty() -> None:
+    g = Graph([(0, 1)])
+    assert preferential_attachment(g, 0, 99) == 0.0
+    assert preferential_attachment(g, 99, 100) == 0.0
+    assert preferential_attachment(Graph(), 0, 1) == 0.0
+
+
+def test_preferential_attachment_isolated() -> None:
+    g = Graph()
+    g.add_node(0)
+    g.add_node(1)
+    assert preferential_attachment(g, 0, 1) == 0.0
+
+
+def test_preferential_attachment_scores_batch() -> None:
+    g = Graph([(0, 1), (0, 2), (1, 2), (2, 3)])
+    pairs = [(0, 1), (0, 3), (1, 3), (0, 99)]
+    scores = preferential_attachment_scores(g, pairs)
+    assert len(scores) == 4
+    assert scores[0] == pytest.approx(preferential_attachment(g, 0, 1))
+    assert scores[1] == pytest.approx(preferential_attachment(g, 0, 3))
+    assert scores[2] == pytest.approx(preferential_attachment(g, 1, 3))
+    assert scores[3] == 0.0
+    assert preferential_attachment_scores(Graph(), []) == []
+
+
+def test_preferential_attachment_karate_finite_and_symmetric() -> None:
+    g = karate_club()
+    s01 = preferential_attachment(g, 0, 33)
+    s10 = preferential_attachment(g, 33, 0)
+    assert s01 == pytest.approx(s10)
+    assert s01 >= 0.0
+    assert math.isfinite(s01)
+    # High-degree hubs should score higher than two leaves if degrees differ.
+    assert preferential_attachment(g, 0, 33) == float(g.degree(0)) * float(g.degree(33))
+
+
+def test_preferential_attachment_export_available() -> None:
+    from graph_analytics_kit import preferential_attachment as pa
+    from graph_analytics_kit import preferential_attachment_scores as pas
+
+    assert callable(pa)
+    assert callable(pas)

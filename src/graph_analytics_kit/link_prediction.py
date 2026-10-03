@@ -6,7 +6,7 @@ from typing import Iterable, List, Tuple
 
 from .graph import Graph
 
-__all__ = ["adamic_adar", "adamic_adar_scores", "jaccard", "jaccard_scores", "resource_allocation", "resource_allocation_scores"]
+__all__ = ["adamic_adar", "adamic_adar_scores", "jaccard", "jaccard_scores", "resource_allocation", "resource_allocation_scores", "preferential_attachment", "preferential_attachment_scores"]
 
 Pair = Tuple[int, int]
 
@@ -195,3 +195,53 @@ def resource_allocation_scores(
     """
     pair_list: List[Pair] = [(int(u), int(v)) for u, v in pairs]
     return [resource_allocation(g, u, v) for u, v in pair_list]
+
+
+def preferential_attachment(g: Graph, u: int, v: int) -> float:
+    """Return the Preferential Attachment score between nodes *u* and *v*.
+
+    The score is ``deg(u) * deg(v)`` (Barabási–Albert / Newman preferential
+    attachment index). Higher scores indicate that high-degree endpoints are
+    more likely to form a link. The score is symmetric:
+    ``preferential_attachment(g, u, v) == preferential_attachment(g, v, u)``.
+    When *u* or *v* is missing from *g*, the score is ``0.0``.
+
+    Parameters
+    ----------
+    g:
+        Input graph. Directed graphs use each node's out-degree (same
+        convention as :func:`resource_allocation`).
+    u, v:
+        Node labels.
+
+    Returns
+    -------
+    float
+        Non-negative Preferential Attachment score.
+    """
+    nodes = set(g.nodes)
+    if u not in nodes or v not in nodes:
+        return 0.0
+    return float(g.degree(u)) * float(g.degree(v))
+
+
+def preferential_attachment_scores(
+    g: Graph,
+    pairs: Iterable[Pair],
+) -> List[float]:
+    """Compute Preferential Attachment scores for many node pairs.
+
+    Parameters
+    ----------
+    g:
+        Input graph.
+    pairs:
+        Iterable of ``(u, v)`` node-label pairs.
+
+    Returns
+    -------
+    list[float]
+        Scores in the same order as *pairs*.
+    """
+    pair_list: List[Pair] = [(int(u), int(v)) for u, v in pairs]
+    return [preferential_attachment(g, u, v) for u, v in pair_list]
