@@ -19,6 +19,8 @@ from .assortativity import degree_assortativity
 from .link_prediction import (
     adamic_adar,
     adamic_adar_scores,
+    common_neighbors,
+    common_neighbors_scores,
     jaccard,
     jaccard_scores,
     preferential_attachment,
@@ -122,7 +124,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     lp = sub.add_parser(
         "link-prediction",
-        help="Print Adamic–Adar / Jaccard / Resource Allocation / Preferential Attachment link-prediction scores",
+        help="Print Adamic–Adar / Jaccard / Resource Allocation / Preferential Attachment / Common Neighbors link-prediction scores",
     )
     _add_graph_args(lp)
     lp.add_argument("--u", type=int, required=True, help="First node label")
@@ -135,9 +137,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     lp.add_argument(
         "--metric",
-        choices=["adamic-adar", "jaccard", "resource-allocation", "preferential-attachment", "both"],
+        choices=["adamic-adar", "jaccard", "resource-allocation", "preferential-attachment", "common-neighbors", "both"],
         default="both",
-        help="Score to print / rank by (default: both AA+Jaccard for the pair; top-pairs uses adamic-adar unless jaccard, resource-allocation, or preferential-attachment)",
+        help="Score to print / rank by (default: both AA+Jaccard for the pair; top-pairs uses adamic-adar unless jaccard, resource-allocation, preferential-attachment, or common-neighbors)",
     )
 
     return parser
@@ -266,6 +268,9 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
     if metric == "preferential-attachment":
         pa = preferential_attachment(g, args.u, args.v)
         print(f"preferential_attachment({args.u}, {args.v}): {pa:.6f}")
+    if metric == "common-neighbors":
+        cn = common_neighbors(g, args.u, args.v)
+        print(f"common_neighbors({args.u}, {args.v}): {cn:.6f}")
     if args.top_pairs and args.top_pairs > 0:
         nodes = g.nodes
         existing = {(min(u, v), max(u, v)) for u, v, _w in g.edges}
@@ -285,6 +290,9 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
         elif metric == "preferential-attachment":
             scores = preferential_attachment_scores(g, candidates)
             label = "Preferential Attachment"
+        elif metric == "common-neighbors":
+            scores = common_neighbors_scores(g, candidates)
+            label = "Common Neighbors"
         else:
             scores = adamic_adar_scores(g, candidates)
             label = "Adamic–Adar"

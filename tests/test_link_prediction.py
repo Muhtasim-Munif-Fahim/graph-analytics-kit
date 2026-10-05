@@ -1,4 +1,4 @@
-"""Tests for Adamic–Adar, Jaccard, Resource Allocation, and Preferential Attachment link prediction."""
+"""Tests for Adamic–Adar, Jaccard, Resource Allocation, Preferential Attachment, and Common Neighbors link prediction."""
 from __future__ import annotations
 
 import math
@@ -9,6 +9,8 @@ from graph_analytics_kit import (
     Graph,
     adamic_adar,
     adamic_adar_scores,
+    common_neighbors,
+    common_neighbors_scores,
     jaccard,
     jaccard_scores,
     karate_club,
@@ -264,3 +266,68 @@ def test_preferential_attachment_export_available() -> None:
 
     assert callable(pa)
     assert callable(pas)
+
+
+def test_common_neighbors_triangle_exact() -> None:
+    # Complete triangle: 0 and 1 share neighbor 2 → CN = 1
+    g = Graph([(0, 1), (0, 2), (1, 2)])
+    assert common_neighbors(g, 0, 1) == pytest.approx(1.0)
+    assert common_neighbors(g, 1, 0) == pytest.approx(1.0)
+
+
+def test_common_neighbors_star() -> None:
+    # Leaves share center → CN = 1
+    g = Graph([(0, 1), (0, 2), (0, 3)])
+    assert common_neighbors(g, 1, 2) == pytest.approx(1.0)
+    assert common_neighbors(g, 1, 3) == pytest.approx(1.0)
+
+
+def test_common_neighbors_two_common() -> None:
+    g = Graph([(0, 2), (1, 2), (0, 3), (1, 3), (2, 3)])
+    assert common_neighbors(g, 0, 1) == pytest.approx(2.0)
+
+
+def test_common_neighbors_no_common_and_missing() -> None:
+    g = Graph([(0, 1), (2, 3)])
+    assert common_neighbors(g, 0, 2) == 0.0
+    assert common_neighbors(g, 0, 99) == 0.0
+    assert common_neighbors(Graph(), 0, 1) == 0.0
+
+
+def test_common_neighbors_partial_overlap() -> None:
+    # 0 neighbors {1,2}; 3 neighbors {2,4} → ∩={2} → 1
+    g = Graph([(0, 1), (0, 2), (3, 2), (3, 4)])
+    assert common_neighbors(g, 0, 3) == pytest.approx(1.0)
+    assert common_neighbors(g, 3, 0) == pytest.approx(1.0)
+
+
+def test_common_neighbors_scores_batch() -> None:
+    g = Graph([(0, 1), (0, 2), (1, 2), (2, 3)])
+    pairs = [(0, 1), (0, 3), (1, 3), (0, 99)]
+    scores = common_neighbors_scores(g, pairs)
+    assert len(scores) == 4
+    assert scores[0] == pytest.approx(common_neighbors(g, 0, 1))
+    assert scores[1] == pytest.approx(common_neighbors(g, 0, 3))
+    assert scores[2] == pytest.approx(common_neighbors(g, 1, 3))
+    assert scores[3] == 0.0
+    assert common_neighbors_scores(Graph(), []) == []
+
+
+def test_common_neighbors_karate_finite_and_symmetric() -> None:
+    g = karate_club()
+    s01 = common_neighbors(g, 0, 33)
+    s10 = common_neighbors(g, 33, 0)
+    assert s01 == pytest.approx(s10)
+    assert s01 >= 0.0
+    assert math.isfinite(s01)
+    # Count must be an integer-valued float.
+    assert s01 == float(int(s01))
+
+
+def test_common_neighbors_export_available() -> None:
+    from graph_analytics_kit import common_neighbors as cn
+    from graph_analytics_kit import common_neighbors_scores as cns
+
+    assert callable(cn)
+    assert callable(cns)
+

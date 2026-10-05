@@ -17,6 +17,8 @@ from .assortativity import degree_assortativity
 from .link_prediction import (
     adamic_adar,
     adamic_adar_scores,
+    common_neighbors,
+    common_neighbors_scores,
     jaccard,
     jaccard_scores,
     preferential_attachment,
@@ -59,6 +61,8 @@ __all__ = [
     "resource_allocation_scores",
     "preferential_attachment",
     "preferential_attachment_scores",
+    "common_neighbors",
+    "common_neighbors_scores",
     "communities",
     "girvan_newman",
     "label_propagation",

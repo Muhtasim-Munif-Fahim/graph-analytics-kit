@@ -40,6 +40,8 @@ from graph_analytics_kit import (
     resource_allocation_scores,
     preferential_attachment,
     preferential_attachment_scores,
+    common_neighbors,
+    common_neighbors_scores,
     local_clustering,
     pagerank,
     reconstruct_path,
@@ -53,6 +55,7 @@ print(adamic_adar(g, 0, 33))
 print(jaccard(g, 0, 33))
 print(resource_allocation(g, 0, 33))
 print(preferential_attachment(g, 0, 33))
+print(common_neighbors(g, 0, 33))
 print(pagerank(g)[0])
 print(eigenvector_centrality(g)[0])
 print(harmonic_centrality(g)[0])
@@ -113,6 +116,8 @@ disconnected graphs because unreachable pairs simply contribute nothing.
 
 `preferential_attachment(g, u, v)` returns the Preferential Attachment score `deg(u) * deg(v)` (Barabási–Albert / Newman). `preferential_attachment_scores(g, pairs)` evaluates many pairs at once.
 
+`common_neighbors(g, u, v)` returns the Common Neighbors count `|N(u) ∩ N(v)|` (Liben-Nowell & Kleinberg, 2007). `common_neighbors_scores(g, pairs)` evaluates many pairs at once.
+
 `core_number(g)` returns the k-core number of each node (the largest `k`
 such that the node sits in a subgraph of minimum degree `k`).
 
@@ -145,6 +150,8 @@ graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric jaccard
 graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric resource-allocation
 graph-analytics link-prediction --u 0 --v 33 --metric preferential-attachment
 graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric preferential-attachment
+graph-analytics link-prediction --u 0 --v 33 --metric common-neighbors
+graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric common-neighbors
 ```
 
 See `examples/run_demo.py` for a complete end-to-end demo that writes a
