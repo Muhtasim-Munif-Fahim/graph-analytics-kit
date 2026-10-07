@@ -331,3 +331,60 @@ def test_common_neighbors_export_available() -> None:
     assert callable(cn)
     assert callable(cns)
 
+
+
+from graph_analytics_kit import (
+    hub_promoted_index,
+    hub_promoted_index_scores,
+    katz_index,
+    katz_index_scores,
+)
+
+
+def test_katz_index_triangle_positive():
+    # Path of length 2 through w contributes beta^2.
+    g = Graph([(0, 1), (1, 2)])
+    score = katz_index(g, 0, 2, beta=0.1)
+    # Leading term is beta^2 from the length-2 walk; higher even lengths add more.
+    assert score == pytest.approx(0.010204081632653062, rel=1e-9)
+    assert score > 0.01
+    assert katz_index(g, 0, 2, beta=0.1) == katz_index(g, 2, 0, beta=0.1)
+
+
+def test_katz_index_missing_nodes_zero():
+    g = Graph([(0, 1)])
+    assert katz_index(g, 0, 99) == 0.0
+
+
+def test_katz_index_scores_batch():
+    g = Graph([(0, 1), (1, 2), (2, 3)])
+    scores = katz_index_scores(g, [(0, 2), (0, 3)], beta=0.05)
+    assert len(scores) == 2
+    assert scores[0] > scores[1] >= 0.0
+
+
+def test_katz_index_rejects_bad_beta():
+    g = Graph([(0, 1)])
+    with pytest.raises(ValueError):
+        katz_index(g, 0, 1, beta=0.0)
+    with pytest.raises(ValueError):
+        katz_index(g, 0, 1, beta=1.5)
+
+
+def test_hub_promoted_index_known_value():
+    # u=0 neighbors {1,2}; v=3 neighbors {1}; common={1}; min(deg)=1 → HPI=1
+    g = Graph([(0, 1), (0, 2), (3, 1)])
+    assert hub_promoted_index(g, 0, 3) == pytest.approx(1.0)
+    assert hub_promoted_index(g, 3, 0) == pytest.approx(1.0)
+
+
+def test_hub_promoted_index_zero_when_no_common():
+    g = Graph([(0, 1), (2, 3)])
+    assert hub_promoted_index(g, 0, 2) == 0.0
+
+
+def test_hub_promoted_index_scores_batch():
+    g = Graph([(0, 1), (0, 2), (3, 1)])
+    scores = hub_promoted_index_scores(g, [(0, 3), (0, 2)])
+    assert scores[0] == pytest.approx(1.0)
+    assert scores[1] == 0.0
