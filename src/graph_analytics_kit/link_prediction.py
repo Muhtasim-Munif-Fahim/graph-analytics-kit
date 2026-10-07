@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import math
+
+import numpy as np
 from typing import Iterable, List, Tuple
 
 from .graph import Graph
 
-__all__ = ["adamic_adar", "adamic_adar_scores", "jaccard", "jaccard_scores", "resource_allocation", "resource_allocation_scores", "preferential_attachment", "preferential_attachment_scores", "common_neighbors", "common_neighbors_scores"]
+__all__ = ["adamic_adar", "adamic_adar_scores", "jaccard", "jaccard_scores", "resource_allocation", "resource_allocation_scores", "preferential_attachment", "preferential_attachment_scores", "common_neighbors", "common_neighbors_scores", "katz_index", "katz_index_scores", "hub_promoted_index", "hub_promoted_index_scores"]
 
 Pair = Tuple[int, int]
 
@@ -297,4 +299,123 @@ def common_neighbors_scores(
     """
     pair_list: List[Pair] = [(int(u), int(v)) for u, v in pairs]
     return [common_neighbors(g, u, v) for u, v in pair_list]
+
+
+def _adjacency_matrix(g: Graph) -> tuple[list[int], "np.ndarray"]:
+    """Return ``(node_order, A)`` for an unweighted adjacency matrix."""
+    nodes = sorted(g.nodes)
+    index = {node: i for i, node in enumerate(nodes)}
+    n = len(nodes)
+    A = np.zeros((n, n), dtype=float)
+    for u in nodes:
+        for v in g.neighbors(u):
+            if v in index:
+                A[index[u], index[v]] = 1.0
+    # Ensure undirected symmetry if the graph stores one-way undirected edges.
+    A = np.maximum(A, A.T)
+    return nodes, A
+
+
+def katz_index(
+    g: Graph,
+    u: int,
+    v: int,
+    *,
+    beta: float = 0.05,
+) -> float:
+    """Return the Katz link-prediction index between *u* and *v*.
+
+    Katz (1953) scores a pair by the discounted number of walks of every
+    length ``l >= 1`` between them:
+
+    ``score(u, v) = sum_{l=1}^∞ β^l (A^l)_{uv}``
+
+    which equals ``((I - β A)^{-1} - I)_{uv}``. Unlike
+    :func:`katz_centrality` (a node prestige score), this is a *pairwise*
+    link predictor. Higher scores indicate a stronger predicted link. The
+    score is symmetric on undirected graphs. Missing nodes yield ``0.0``.
+    ``beta`` must lie in ``(0, 1/ρ(A))``; a conservative default of ``0.05``
+    works for sparse social graphs.
+    """
+    nodes = set(g.nodes)
+    if u not in nodes or v not in nodes:
+        return 0.0
+    if not 0.0 < beta < 1.0:
+        raise ValueError("beta must lie strictly inside (0, 1)")
+    order, A = _adjacency_matrix(g)
+    index = {node: i for i, node in enumerate(order)}
+    n = A.shape[0]
+    eye = np.eye(n)
+    try:
+        resolvent = np.linalg.inv(eye - beta * A)
+    except np.linalg.LinAlgError as exc:
+        raise ValueError(
+            "Katz resolvent is singular; try a smaller beta"
+        ) from exc
+    S = resolvent - eye
+    return float(S[index[u], index[v]])
+
+
+def katz_index_scores(
+    g: Graph,
+    pairs: Iterable[Pair],
+    *,
+    beta: float = 0.05,
+) -> List[float]:
+    """Compute Katz link-prediction scores for many node pairs.
+
+    The resolvent is factored once and reused for every pair.
+    """
+    if not 0.0 < beta < 1.0:
+        raise ValueError("beta must lie strictly inside (0, 1)")
+    pair_list: List[Pair] = [(int(a), int(b)) for a, b in pairs]
+    if not pair_list:
+        return []
+    nodes = set(g.nodes)
+    order, A = _adjacency_matrix(g)
+    index = {node: i for i, node in enumerate(order)}
+    n = A.shape[0]
+    eye = np.eye(n)
+    try:
+        resolvent = np.linalg.inv(eye - beta * A)
+    except np.linalg.LinAlgError as exc:
+        raise ValueError(
+            "Katz resolvent is singular; try a smaller beta"
+        ) from exc
+    S = resolvent - eye
+    out: List[float] = []
+    for u, v in pair_list:
+        if u not in nodes or v not in nodes:
+            out.append(0.0)
+        else:
+            out.append(float(S[index[u], index[v]]))
+    return out
+
+
+def hub_promoted_index(g: Graph, u: int, v: int) -> float:
+    """Return the Hub Promoted Index between nodes *u* and *v*.
+
+    ``HPI(u, v) = |N(u) ∩ N(v)| / min(deg(u), deg(v))`` (Zhou, Lü & Zhang,
+    2009). The denominator favours links involving hubs. When either degree
+    is zero or a node is missing, the score is ``0.0``. The score is
+    symmetric.
+    """
+    nodes = set(g.nodes)
+    if u not in nodes or v not in nodes:
+        return 0.0
+    du = g.degree(u)
+    dv = g.degree(v)
+    denom = min(du, dv)
+    if denom <= 0:
+        return 0.0
+    return float(len(_common_neighbors(g, u, v))) / float(denom)
+
+
+def hub_promoted_index_scores(
+    g: Graph,
+    pairs: Iterable[Pair],
+) -> List[float]:
+    """Compute Hub Promoted Index scores for many node pairs."""
+    pair_list: List[Pair] = [(int(a), int(b)) for a, b in pairs]
+    return [hub_promoted_index(g, u, v) for u, v in pair_list]
 

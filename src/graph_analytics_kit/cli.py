@@ -21,6 +21,10 @@ from .link_prediction import (
     adamic_adar_scores,
     common_neighbors,
     common_neighbors_scores,
+    hub_promoted_index,
+    hub_promoted_index_scores,
+    katz_index,
+    katz_index_scores,
     jaccard,
     jaccard_scores,
     preferential_attachment,
@@ -124,7 +128,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     lp = sub.add_parser(
         "link-prediction",
-        help="Print Adamic–Adar / Jaccard / Resource Allocation / Preferential Attachment / Common Neighbors link-prediction scores",
+        help="Print Adamic–Adar / Jaccard / Resource Allocation / Preferential Attachment / Common Neighbors / Katz Index / Hub Promoted Index link-prediction scores",
     )
     _add_graph_args(lp)
     lp.add_argument("--u", type=int, required=True, help="First node label")
@@ -137,7 +141,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     lp.add_argument(
         "--metric",
-        choices=["adamic-adar", "jaccard", "resource-allocation", "preferential-attachment", "common-neighbors", "both"],
+        choices=["adamic-adar", "jaccard", "resource-allocation", "preferential-attachment", "common-neighbors", "katz-index", "hub-promoted", "both"],
         default="both",
         help="Score to print / rank by (default: both AA+Jaccard for the pair; top-pairs uses adamic-adar unless jaccard, resource-allocation, preferential-attachment, or common-neighbors)",
     )
@@ -271,6 +275,12 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
     if metric == "common-neighbors":
         cn = common_neighbors(g, args.u, args.v)
         print(f"common_neighbors({args.u}, {args.v}): {cn:.6f}")
+    if metric == "katz-index":
+        kz = katz_index(g, args.u, args.v)
+        print(f"katz_index({args.u}, {args.v}): {kz:.6f}")
+    if metric == "hub-promoted":
+        hpi = hub_promoted_index(g, args.u, args.v)
+        print(f"hub_promoted_index({args.u}, {args.v}): {hpi:.6f}")
     if args.top_pairs and args.top_pairs > 0:
         nodes = g.nodes
         existing = {(min(u, v), max(u, v)) for u, v, _w in g.edges}
@@ -293,6 +303,12 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
         elif metric == "common-neighbors":
             scores = common_neighbors_scores(g, candidates)
             label = "Common Neighbors"
+        elif metric == "katz-index":
+            scores = katz_index_scores(g, candidates)
+            label = "Katz Index"
+        elif metric == "hub-promoted":
+            scores = hub_promoted_index_scores(g, candidates)
+            label = "Hub Promoted Index"
         else:
             scores = adamic_adar_scores(g, candidates)
             label = "Adamic–Adar"
