@@ -2,12 +2,29 @@
 
 A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
-(degree, closeness, harmonic, betweenness, PageRank, eigenvector, Katz, and HITS
+(degree, closeness, harmonic, betweenness, PageRank, Personalized PageRank / random-walk-with-restart, eigenvector, Katz, and HITS
 hubs/authorities), k-core numbers, Dijkstra shortest paths, clustering
 coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, label propagation, and spectral clustering),
 link-prediction scores (including Katz Index and Hub Promoted Index), AUC evaluation, and a command-line entry point
 that runs an end-to-end
 analysis on the classic Zachary's Karate Club network.
+
+
+## Personalized PageRank
+
+`personalized_pagerank` is the restart / seed-biased counterpart of
+`pagerank`. Teleport mass follows a non-negative personalization map
+instead of the uniform distribution, so a single seed recovers classic
+random-walk-with-restart ranking (Haveliwala 2002). Passing ``None`` or
+``{}`` falls back to uniform PageRank.
+
+```python
+from graph_analytics_kit import Graph, personalized_pagerank
+
+g = Graph.karate_club()
+scores = personalized_pagerank(g, {0: 1.0}, alpha=0.85)
+assert scores[0] == max(scores.values())
+```
 
 ## Install
 
@@ -44,6 +61,7 @@ from graph_analytics_kit import (
     common_neighbors_scores,
     local_clustering,
     pagerank,
+    personalized_pagerank,
     reconstruct_path,
 )
 
@@ -57,6 +75,7 @@ print(resource_allocation(g, 0, 33))
 print(preferential_attachment(g, 0, 33))
 print(common_neighbors(g, 0, 33))
 print(pagerank(g)[0])
+print(personalized_pagerank(g, {0: 1.0})[0])
 print(eigenvector_centrality(g)[0])
 print(harmonic_centrality(g)[0])
 print(katz_centrality(g, alpha=0.1)[0])

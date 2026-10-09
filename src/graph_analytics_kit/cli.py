@@ -14,6 +14,7 @@ from .centrality import (
     hits,
     katz_centrality,
     pagerank,
+    personalized_pagerank,
 )
 from .assortativity import degree_assortativity
 from .link_prediction import (
@@ -61,6 +62,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "harmonic",
             "betweenness",
             "pagerank",
+            "personalized-pagerank",
             "eigenvector",
             "katz",
             "hubs",
@@ -190,6 +192,7 @@ def cmd_centrality(args: argparse.Namespace) -> int:
         "harmonic": harmonic_centrality,
         "betweenness": betweenness_centrality,
         "pagerank": pagerank,
+        "personalized-pagerank": lambda g: personalized_pagerank(g, {g.nodes[0]: 1.0} if g.nodes else {}),
         "eigenvector": eigenvector_centrality,
         "katz": katz_centrality,
         "hubs": lambda graph: hits(graph)[0],
