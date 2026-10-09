@@ -37,7 +37,7 @@ from .mst import kruskal_mst, mst_weight
 from .hits import hits
 from .katz import katz_centrality
 from .kcore import core_number
-from .pagerank import pagerank
+from .pagerank import pagerank, personalized_pagerank
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
 
 __all__ = [
@@ -50,6 +50,7 @@ __all__ = [
     "harmonic_centrality",
     "betweenness_centrality",
     "pagerank",
+    "personalized_pagerank",
     "eigenvector_centrality",
     "katz_centrality",
     "hits",

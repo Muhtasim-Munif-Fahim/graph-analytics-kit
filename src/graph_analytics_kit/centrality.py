@@ -11,7 +11,7 @@ from .graph import Graph
 from .hits import hits
 from .katz import katz_centrality
 from .kcore import core_number
-from .pagerank import pagerank
+from .pagerank import pagerank, personalized_pagerank
 
 
 def degree_centrality(g: Graph) -> Dict[int, int]:
@@ -145,6 +145,7 @@ __all__ = [
     "harmonic_centrality",
     "betweenness_centrality",
     "pagerank",
+    "personalized_pagerank",
     "eigenvector_centrality",
     "katz_centrality",
     "hits",
