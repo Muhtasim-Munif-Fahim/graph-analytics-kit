@@ -3,7 +3,7 @@
 A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, harmonic, betweenness, PageRank, Personalized PageRank / random-walk-with-restart, eigenvector, Katz, and HITS
-hubs/authorities), k-core numbers, Dijkstra shortest paths, clustering
+hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dijkstra shortest paths, clustering
 coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, label propagation, and spectral clustering),
 link-prediction scores (including Katz Index and Hub Promoted Index), AUC evaluation, and a command-line entry point
 that runs an end-to-end
@@ -24,6 +24,25 @@ from graph_analytics_kit import Graph, personalized_pagerank
 g = Graph.karate_club()
 scores = personalized_pagerank(g, {0: 1.0}, alpha=0.85)
 assert scores[0] == max(scores.values())
+```
+
+## Bridges, articulation points, and biconnected components
+
+`bridges`, `articulation_points`, `biconnected_components`, and
+`two_edge_connected_components` find the single edges and nodes whose
+removal disconnects the graph. They share one iterative Tarjan/Hopcroft
+DFS, which runs in `O(n + m)` with no recursion, so long paths are safe.
+Weights and self-loops are ignored, and directed graphs are analyzed as
+their underlying undirected graph. `cut_structure` returns everything,
+plus counts, in one pass.
+
+```python
+from graph_analytics_kit import Graph, bridges, articulation_points, biconnected_components
+
+g = Graph.karate_club()
+bridges(g)                 # [(0, 11)]  node 11 hangs off the instructor
+articulation_points(g)     # [0]
+[len(c) for c in biconnected_components(g)]  # [28, 6, 2]
 ```
 
 ## Install
@@ -158,6 +177,7 @@ graph-analytics centrality --measure hubs
 graph-analytics centrality --measure authorities
 graph-analytics centrality --measure core
 graph-analytics clustering
+graph-analytics connectivity --components
 graph-analytics communities
 graph-analytics communities --method label-propagation --seed 0
 graph-analytics communities --method spectral --n-communities 2

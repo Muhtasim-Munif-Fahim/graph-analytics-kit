@@ -128,6 +128,16 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--top", type=int, default=5, help="Show closest N nodes")
 
 
+    conn = sub.add_parser(
+        "connectivity",
+        help="Print bridges, articulation points, and biconnected components",
+    )
+    _add_graph_args(conn)
+    conn.add_argument(
+        "--components", action="store_true",
+        help="Also list every biconnected component's nodes",
+    )
+
     lp = sub.add_parser(
         "link-prediction",
         help="Print Adamic–Adar / Jaccard / Resource Allocation / Preferential Attachment / Common Neighbors / Katz Index / Hub Promoted Index link-prediction scores",
@@ -325,6 +335,23 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_connectivity(args: argparse.Namespace) -> int:
+    from .connectivity import cut_structure
+
+    g = _load_graph(args)
+    info = cut_structure(g)
+    bridges_txt = ", ".join(f"{u}-{v}" for u, v in info["bridges"]) or "none"
+    cuts_txt = ", ".join(str(n) for n in info["articulation_points"]) or "none"
+    print(f"bridges ({info['n_bridges']}): {bridges_txt}")
+    print(f"articulation_points ({info['n_articulation_points']}): {cuts_txt}")
+    print(f"biconnected_components: {info['n_biconnected_components']}")
+    print(f"largest_biconnected_component: {info['largest_biconnected_component']}")
+    if args.components:
+        for i, comp in enumerate(info["biconnected_components"]):
+            print(f"  [{i}] size={len(comp)}: {' '.join(map(str, comp))}")
+    return 0
+
+
 def cmd_shortest_path(args: argparse.Namespace) -> int:
     g = _load_graph(args)
     dist, prev = dijkstra_shortest_path(g, args.source, target=args.target)
@@ -432,6 +459,25 @@ def _compose_report(g: Graph) -> str:
             f"- Path: {hop_path}",
         ]
     )
+    from .connectivity import cut_structure
+
+    cuts = cut_structure(g)
+    bridge_txt = ", ".join(f"{u}-{v}" for u, v in cuts["bridges"]) or "none"
+    cut_txt = ", ".join(str(n) for n in cuts["articulation_points"]) or "none"
+    lines.extend(
+        [
+            "",
+            "## Cut structure",
+            "",
+            "Bridges and articulation points are single edges and nodes whose "
+            "removal disconnects the graph (Tarjan/Hopcroft DFS).",
+            "",
+            f"- Bridges: {bridge_txt}",
+            f"- Articulation points: {cut_txt}",
+            f"- Biconnected components: {cuts['n_biconnected_components']} "
+            f"(largest has {cuts['largest_biconnected_component']} nodes)",
+        ]
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -443,6 +489,7 @@ _COMMANDS = {
     "communities": cmd_communities,
     "shortest-path": cmd_shortest_path,
     "link-prediction": cmd_link_prediction,
+    "connectivity": cmd_connectivity,
 }
 
 
