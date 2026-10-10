@@ -30,6 +30,13 @@ from .link_prediction import (
     resource_allocation,
     resource_allocation_scores,
 )
+from .connectivity import (
+    articulation_points,
+    biconnected_components,
+    bridges,
+    cut_structure,
+    two_edge_connected_components,
+)
 from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .dfs import dfs_path, dfs_traversal
@@ -55,6 +62,11 @@ __all__ = [
     "katz_centrality",
     "hits",
     "core_number",
+    "bridges",
+    "articulation_points",
+    "biconnected_components",
+    "two_edge_connected_components",
+    "cut_structure",
     "local_clustering",
     "average_clustering",
     "degree_assortativity",

@@ -265,7 +265,7 @@ def test_demo_report_includes_core(tmp_path) -> None:
     text = out.read_text(encoding="utf-8")
     assert "Core" in text
     assert (
-        "| Node | Degree | Closeness | Betweenness | Core | PageRank | Eigenvector | "
+        "| Node | Degree | Closeness | Harmonic | Betweenness | Core | PageRank | Eigenvector | "
         "Katz | Hub | Authority | Clustering | Community |"
         in text
     )
