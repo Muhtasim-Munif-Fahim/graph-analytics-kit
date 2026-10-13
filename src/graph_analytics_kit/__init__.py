@@ -1,4 +1,4 @@
-"""Graph analytics: centrality, clustering, communities, and link prediction."""
+"""Graph analytics: centrality, clustering, communities, link prediction, and flows."""
 
 from __future__ import annotations
 
@@ -40,6 +40,7 @@ from .connectivity import (
 from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .dfs import dfs_path, dfs_traversal
+from .flow import FlowResult, edge_connectivity, maximum_bipartite_matching, maximum_flow, minimum_cut
 from .mst import kruskal_mst, mst_weight
 from .hits import hits
 from .katz import katz_centrality
@@ -95,4 +96,9 @@ __all__ = [
     "mst_weight",
     "dijkstra_shortest_path",
     "reconstruct_path",
+    "FlowResult",
+    "maximum_flow",
+    "minimum_cut",
+    "edge_connectivity",
+    "maximum_bipartite_matching",
 ]

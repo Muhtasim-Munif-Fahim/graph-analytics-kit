@@ -3,7 +3,7 @@
 A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, harmonic, betweenness, PageRank, Personalized PageRank / random-walk-with-restart, eigenvector, Katz, and HITS
-hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dijkstra shortest paths, clustering
+hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dinic max-flow / min-cut, edge connectivity, Hopcroft–Karp bipartite matching, Dijkstra shortest paths, clustering
 coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, label propagation, and spectral clustering),
 link-prediction scores (including Katz Index and Hub Promoted Index), AUC evaluation, and a command-line entry point
 that runs an end-to-end
@@ -43,6 +43,30 @@ g = Graph.karate_club()
 bridges(g)                 # [(0, 11)]  node 11 hangs off the instructor
 articulation_points(g)     # [0]
 [len(c) for c in biconnected_components(g)]  # [28, 6, 2]
+```
+
+## Max flow, min cut, edge connectivity, and bipartite matching
+
+`maximum_flow` runs Dinic's algorithm (BFS level graph + blocking flow). Edge
+weights are capacities, and an undirected edge can carry its capacity in either
+direction. The result holds the flow value, the per-arc flow, and the minimum
+s-t cut (max-flow/min-cut theorem): the source/sink sides, the saturated cut
+edges, and their capacity. `edge_connectivity(g, s, t)` counts edge-disjoint
+paths (unit capacities, Menger); `edge_connectivity(g)` is the global λ(G).
+`maximum_bipartite_matching` is Hopcroft–Karp. Pass `left=` or let it
+2-colour the graph.
+
+```python
+from graph_analytics_kit import Graph, edge_connectivity, maximum_bipartite_matching, maximum_flow
+
+g = Graph([(0, 1, 16), (0, 2, 13), (1, 3, 12), (2, 1, 4), (2, 4, 14),
+           (3, 2, 9), (3, 5, 20), (4, 3, 7), (4, 5, 4)], directed=True)
+res = maximum_flow(g, 0, 5)
+res.value, res.source_side, res.cut_edges   # 23.0, [0, 1, 2, 4], [(1, 3), (4, 3), (4, 5)]
+
+edge_connectivity(Graph.karate_club(), 0, 33)   # 10 edge-disjoint paths
+matching = maximum_bipartite_matching(Graph([(0, 3), (0, 4), (1, 3), (2, 4), (2, 5)]))
+len(matching) // 2                               # 3
 ```
 
 ## Install
@@ -182,6 +206,8 @@ graph-analytics communities
 graph-analytics communities --method label-propagation --seed 0
 graph-analytics communities --method spectral --n-communities 2
 graph-analytics shortest-path --source 0 --target 33
+graph-analytics flow --source 0 --sink 33
+graph-analytics flow --source 0 --sink 33 --unit
 graph-analytics link-prediction --u 0 --v 33
 graph-analytics link-prediction --u 0 --v 33 --metric jaccard
 graph-analytics link-prediction --u 0 --v 33 --metric resource-allocation
