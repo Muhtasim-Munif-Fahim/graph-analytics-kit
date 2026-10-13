@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from .centrality import (
@@ -136,6 +137,18 @@ def _build_parser() -> argparse.ArgumentParser:
     conn.add_argument(
         "--components", action="store_true",
         help="Also list every biconnected component's nodes",
+    )
+
+    fl = sub.add_parser(
+        "flow",
+        help="Print the max s-t flow (Dinic), the minimum cut, and edge connectivity",
+    )
+    _add_graph_args(fl)
+    fl.add_argument("--source", type=int, default=0, help="Source node label")
+    fl.add_argument("--sink", type=int, default=33, help="Sink node label")
+    fl.add_argument(
+        "--unit", action="store_true",
+        help="Treat every edge as capacity 1 (edge-disjoint paths)",
     )
 
     lp = sub.add_parser(
@@ -352,6 +365,25 @@ def cmd_connectivity(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_flow(args: argparse.Namespace) -> int:
+    from .flow import edge_connectivity, maximum_flow
+
+    g = _load_graph(args)
+    try:
+        res = maximum_flow(g, args.source, args.sink, unit_capacity=args.unit)
+    except ValueError as exc:
+        print(f"flow: {exc}", file=sys.stderr)
+        return 2
+    print(f"max flow: {res.value:g}  ({args.source} -> {args.sink}, {res.meta['phases']} Dinic phases)")
+    print(f"min cut capacity: {res.cut_capacity:g}")
+    print("cut edges: " + (", ".join(f"{u}-{v}" for u, v in res.cut_edges) or "none"))
+    print(f"source side ({len(res.source_side)}): {' '.join(map(str, res.source_side))}")
+    print(f"sink side ({len(res.sink_side)}): {' '.join(map(str, res.sink_side))}")
+    print(f"edge connectivity ({args.source}-{args.sink}): {edge_connectivity(g, args.source, args.sink)}")
+    print(f"edge connectivity (global): {edge_connectivity(g)}")
+    return 0
+
+
 def cmd_shortest_path(args: argparse.Namespace) -> int:
     g = _load_graph(args)
     dist, prev = dijkstra_shortest_path(g, args.source, target=args.target)
@@ -490,6 +522,7 @@ _COMMANDS = {
     "shortest-path": cmd_shortest_path,
     "link-prediction": cmd_link_prediction,
     "connectivity": cmd_connectivity,
+    "flow": cmd_flow,
 }
 
 
