@@ -47,6 +47,7 @@ from .katz import katz_centrality
 from .kcore import core_number
 from .pagerank import pagerank, personalized_pagerank
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
+from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
     "__version__",
@@ -64,6 +65,9 @@ __all__ = [
     "hits",
     "core_number",
     "bridges",
+    "strongly_connected_components",
+    "condensation_dag",
+    "is_strongly_connected",
     "articulation_points",
     "biconnected_components",
     "two_edge_connected_components",
