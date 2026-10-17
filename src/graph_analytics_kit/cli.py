@@ -139,6 +139,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Also list every biconnected component's nodes",
     )
 
+    cq = sub.add_parser(
+        "cliques",
+        help="Print maximal cliques (Bron–Kerbosch with pivoting), clique number, and triangles",
+    )
+    _add_graph_args(cq)
+    cq.add_argument("--min-size", type=int, default=3, help="Only list cliques with at least this many nodes (default: 3)")
+    cq.add_argument("--top", type=int, default=10, help="List at most this many cliques (default: 10; 0 = all)")
+
     fl = sub.add_parser(
         "flow",
         help="Print the max s-t flow (Dinic), the minimum cut, and edge connectivity",
@@ -365,6 +373,28 @@ def cmd_connectivity(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_cliques(args: argparse.Namespace) -> int:
+    from .cliques import clique_number, find_cliques, number_of_maximal_cliques, total_triangles, triangles
+
+    if args.min_size < 1:
+        print("cliques: --min-size must be >= 1", file=sys.stderr)
+        return 2
+    g = _load_graph(args)
+    cliques = find_cliques(g, min_size=args.min_size)
+    omega = clique_number(g)
+    print(f"maximal_cliques: {number_of_maximal_cliques(g)}")
+    print(f"clique_number: {omega}")
+    print(f"maximal_cliques_with_size>={args.min_size}: {len(cliques)}")
+    print(f"triangles: {total_triangles(g)}")
+    shown = cliques if args.top == 0 else cliques[: args.top]
+    for clique in shown:
+        print(f"  size={len(clique)}: {' '.join(map(str, clique))}")
+    tri = triangles(g)
+    top_nodes = sorted(tri, key=lambda n: (-tri[n], n))[:5]
+    print("most_triangles: " + ", ".join(f"{n}({tri[n]})" for n in top_nodes))
+    return 0
+
+
 def cmd_flow(args: argparse.Namespace) -> int:
     from .flow import edge_connectivity, maximum_flow
 
@@ -523,6 +553,7 @@ _COMMANDS = {
     "link-prediction": cmd_link_prediction,
     "connectivity": cmd_connectivity,
     "flow": cmd_flow,
+    "cliques": cmd_cliques,
 }
 
 
