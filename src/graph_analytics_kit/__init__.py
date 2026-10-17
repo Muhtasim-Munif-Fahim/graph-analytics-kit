@@ -1,4 +1,4 @@
-"""Graph analytics: centrality, clustering, communities, link prediction, and flows."""
+"""Graph analytics: centrality, clustering, cliques, communities, link prediction, and flows."""
 
 from __future__ import annotations
 
@@ -45,6 +45,15 @@ from .mst import kruskal_mst, mst_weight
 from .hits import hits
 from .katz import katz_centrality
 from .kcore import core_number
+from .cliques import (
+    clique_number,
+    find_cliques,
+    max_clique,
+    node_clique_number,
+    number_of_maximal_cliques,
+    total_triangles,
+    triangles,
+)
 from .pagerank import pagerank, personalized_pagerank
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
@@ -64,6 +73,13 @@ __all__ = [
     "katz_centrality",
     "hits",
     "core_number",
+    "find_cliques",
+    "max_clique",
+    "clique_number",
+    "node_clique_number",
+    "number_of_maximal_cliques",
+    "triangles",
+    "total_triangles",
     "bridges",
     "strongly_connected_components",
     "condensation_dag",

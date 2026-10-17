@@ -190,6 +190,26 @@ self-loops are ignored. On a directed graph the core numbers are those of
 the underlying simple undirected graph. Harmonic centrality is provided
 separately as `harmonic_centrality` (sum of inverse distances).
 
+## Maximal cliques and triangles
+
+`find_cliques` enumerates every maximal clique with Bron–Kerbosch using
+Tomita pivoting and a degeneracy (smallest-last) outer ordering
+(Eppstein–Löffler–Strash). Cliques come back sorted by decreasing size, so
+the first one is a maximum clique. `clique_number`, `max_clique`,
+`node_clique_number` and `number_of_maximal_cliques` build on it, and
+`triangles` / `total_triangles` count triangles per node with forward edge
+iteration. Weights and self-loops are ignored; directed graphs use the
+underlying simple undirected graph (as `core_number` does).
+
+```python
+from graph_analytics_kit import find_cliques, clique_number, karate_club, triangles
+
+g = karate_club()
+find_cliques(g, min_size=4)[:2]   # [[0, 1, 2, 3, 7], [0, 1, 2, 3, 13]]
+clique_number(g)                  # 5
+triangles(g)[0]                   # 18
+```
+
 ## Console script
 
 ```bash
@@ -198,6 +218,7 @@ graph-analytics centrality --measure harmonic
 graph-analytics centrality --measure eigenvector
 graph-analytics centrality --measure katz --alpha 0.1
 graph-analytics centrality --measure hubs
+graph-analytics cliques --min-size 4 --top 5
 graph-analytics centrality --measure authorities
 graph-analytics centrality --measure core
 graph-analytics clustering
