@@ -1,4 +1,4 @@
-"""Graph analytics: centrality, clustering, cliques, communities, link prediction, and flows."""
+"""Graph analytics: centrality, clustering, cliques, communities, link prediction, similarity, and flows."""
 
 from __future__ import annotations
 
@@ -56,6 +56,7 @@ from .cliques import (
 )
 from .pagerank import pagerank, personalized_pagerank
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
+from .simrank import most_similar, simrank_matrix, simrank_scores, simrank_similarity
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
