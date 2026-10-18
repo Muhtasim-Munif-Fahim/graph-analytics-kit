@@ -37,6 +37,7 @@ from .link_prediction import (
 from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .graph import Graph, karate_club
+from .simrank import most_similar, simrank_scores, simrank_similarity
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
 
 
@@ -161,7 +162,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     lp = sub.add_parser(
         "link-prediction",
-        help="Print Adamic–Adar / Jaccard / Resource Allocation / Preferential Attachment / Common Neighbors / Katz Index / Hub Promoted Index link-prediction scores",
+        help="Print Adamic–Adar / Jaccard / Resource Allocation / Preferential Attachment / Common Neighbors / Katz Index / Hub Promoted Index / SimRank link-prediction scores",
     )
     _add_graph_args(lp)
     lp.add_argument("--u", type=int, required=True, help="First node label")
@@ -174,10 +175,22 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     lp.add_argument(
         "--metric",
-        choices=["adamic-adar", "jaccard", "resource-allocation", "preferential-attachment", "common-neighbors", "katz-index", "hub-promoted", "both"],
+        choices=["adamic-adar", "jaccard", "resource-allocation", "preferential-attachment", "common-neighbors", "katz-index", "hub-promoted", "simrank", "both"],
         default="both",
         help="Score to print / rank by (default: both AA+Jaccard for the pair; top-pairs uses adamic-adar unless jaccard, resource-allocation, preferential-attachment, or common-neighbors)",
     )
+    lp.add_argument(
+        "--decay",
+        type=float,
+        default=0.8,
+        help="SimRank decay factor C in (0, 1) (default: 0.8; used with --metric simrank)",
+    )
+
+    sim = sub.add_parser("similar", help="Rank the nodes most SimRank-similar to a node")
+    _add_graph_args(sim)
+    sim.add_argument("--node", type=int, required=True, help="Query node label")
+    sim.add_argument("--top", type=int, default=5, help="How many similar nodes to list (default: 5)")
+    sim.add_argument("--decay", type=float, default=0.8, help="SimRank decay factor C (default: 0.8)")
 
     return parser
 
@@ -315,6 +328,9 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
     if metric == "hub-promoted":
         hpi = hub_promoted_index(g, args.u, args.v)
         print(f"hub_promoted_index({args.u}, {args.v}): {hpi:.6f}")
+    if metric == "simrank":
+        sr = simrank_similarity(g, args.u, args.v, decay=args.decay)
+        print(f"simrank({args.u}, {args.v}): {sr:.6f}")
     if args.top_pairs and args.top_pairs > 0:
         nodes = g.nodes
         existing = {(min(u, v), max(u, v)) for u, v, _w in g.edges}
@@ -343,6 +359,9 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
         elif metric == "hub-promoted":
             scores = hub_promoted_index_scores(g, candidates)
             label = "Hub Promoted Index"
+        elif metric == "simrank":
+            scores = simrank_scores(g, candidates, decay=args.decay)
+            label = "SimRank"
         else:
             scores = adamic_adar_scores(g, candidates)
             label = "Adamic–Adar"
@@ -353,6 +372,18 @@ def cmd_link_prediction(args: argparse.Namespace) -> int:
         print(f"top non-edges by {label} (n={min(args.top_pairs, len(ranked))}):")
         for (u, v), s in ranked[: args.top_pairs]:
             print(f"  ({u}, {v}): {s:.6f}")
+    return 0
+
+
+def cmd_similar(args: argparse.Namespace) -> int:
+    g = _load_graph(args)
+    if args.node not in set(g.nodes):
+        print(f"graph-analytics: error: node {args.node} is not in the graph", file=sys.stderr)
+        return 2
+    ranked = most_similar(g, args.node, k=args.top, decay=args.decay)
+    print(f"nodes most SimRank-similar to {args.node} (C={args.decay:g}):")
+    for other, score in ranked:
+        print(f"  {other}: {score:.6f}")
     return 0
 
 
@@ -551,6 +582,7 @@ _COMMANDS = {
     "communities": cmd_communities,
     "shortest-path": cmd_shortest_path,
     "link-prediction": cmd_link_prediction,
+    "similar": cmd_similar,
     "connectivity": cmd_connectivity,
     "flow": cmd_flow,
     "cliques": cmd_cliques,

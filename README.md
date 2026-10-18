@@ -5,7 +5,7 @@ reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, harmonic, betweenness, PageRank, Personalized PageRank / random-walk-with-restart, eigenvector, Katz, and HITS
 hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dinic max-flow / min-cut, edge connectivity, Hopcroft–Karp bipartite matching, Dijkstra shortest paths, clustering
 coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, label propagation, and spectral clustering),
-link-prediction scores (including Katz Index and Hub Promoted Index), AUC evaluation, and a command-line entry point
+link-prediction scores (including Katz Index, Hub Promoted Index, and SimRank), AUC evaluation, and a command-line entry point
 that runs an end-to-end
 analysis on the classic Zachary's Karate Club network.
 
@@ -183,6 +183,37 @@ disconnected graphs because unreachable pairs simply contribute nothing.
 `core_number(g)` returns the k-core number of each node (the largest `k`
 such that the node sits in a subgraph of minimum degree `k`).
 
+## SimRank similarity
+
+SimRank (Jeh & Widom, KDD 2002) formalises "two nodes are similar if their
+neighbours are similar". It is the fixed point of
+`s(a, a) = 1` and
+`s(a, b) = C / (|I(a)| |I(b)|) * sum_{i in I(a), j in I(b)} s(i, j)`,
+where `I(x)` are the in-neighbours (all neighbours on undirected graphs) and
+`C` is the decay factor. The kit iterates the matrix form
+`S <- C W^T S W` (diagonal reset to 1). The error after `k` sweeps is at most
+`C^(k+1)`.
+
+Neighbourhood-overlap scores are zero for any pair without a common neighbour.
+SimRank instead propagates similarity through the whole graph, so it can rank
+distant pairs and capture structural roles, e.g. two users on a bipartite
+user-item graph.
+
+```python
+from graph_analytics_kit import Graph, most_similar, simrank_matrix, simrank_scores, simrank_similarity
+
+g = Graph.karate_club()
+nodes, S = simrank_matrix(g, decay=0.8)          # full symmetric matrix, unit diagonal
+print(simrank_similarity(g, 0, 33))               # one pair
+print(simrank_scores(g, [(0, 33), (5, 6)]))       # link-prediction style batch
+print(most_similar(g, 33, k=5))                   # [(node, score), ...]
+```
+
+Directed graphs use in-neighbours, so on a citation graph two papers are similar
+when they are cited by similar papers. Edge weights are ignored, as in the
+original definition. The dense matrix costs `O(n^2)` memory, which is fine up to
+a few thousand nodes.
+
 ## k-core decomposition
 
 `core_number` uses the Batagelj–Zaversnik bin-sort. Edge weights and
@@ -238,6 +269,8 @@ graph-analytics link-prediction --u 0 --v 33 --metric preferential-attachment
 graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric preferential-attachment
 graph-analytics link-prediction --u 0 --v 33 --metric common-neighbors
 graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric common-neighbors
+graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric simrank --decay 0.8
+graph-analytics similar --node 33 --top 5
 ```
 
 See `examples/run_demo.py` for a complete end-to-end demo that writes a
