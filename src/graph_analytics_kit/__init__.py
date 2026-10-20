@@ -57,10 +57,38 @@ from .cliques import (
 from .pagerank import pagerank, personalized_pagerank
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
 from .simrank import most_similar, simrank_matrix, simrank_scores, simrank_similarity
+from .distance import (
+    NegativeCycleError,
+    average_shortest_path_length,
+    bellman_ford,
+    center,
+    diameter,
+    distance_summary,
+    eccentricity,
+    floyd_warshall,
+    floyd_warshall_path,
+    global_efficiency,
+    periphery,
+    radius,
+    wiener_index,
+)
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
     "__version__",
+    "NegativeCycleError",
+    "average_shortest_path_length",
+    "bellman_ford",
+    "center",
+    "diameter",
+    "distance_summary",
+    "eccentricity",
+    "floyd_warshall",
+    "floyd_warshall_path",
+    "global_efficiency",
+    "periphery",
+    "radius",
+    "wiener_index",
     "Graph",
     "karate_club",
     "degree_centrality",

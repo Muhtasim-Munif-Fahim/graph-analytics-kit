@@ -39,6 +39,7 @@ from .community import communities, girvan_newman, label_propagation, modularity
 from .graph import Graph, karate_club
 from .simrank import most_similar, simrank_scores, simrank_similarity
 from .shortest_path import dijkstra_shortest_path, reconstruct_path
+from .distance import distance_summary
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -128,6 +129,14 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--source", type=int, default=0, help="Source node label")
     sp.add_argument("--target", type=int, default=None, help="Optional target node")
     sp.add_argument("--top", type=int, default=5, help="Show closest N nodes")
+
+    dist = sub.add_parser(
+        "distances",
+        help="Diameter, radius, center, periphery, average path length, Wiener index, efficiency",
+    )
+    _add_graph_args(dist)
+    dist.add_argument("--weighted", action="store_true", help="Use edge weights instead of hop counts")
+    dist.add_argument("--eccentricity", action="store_true", help="Also print every node's eccentricity")
 
 
     conn = sub.add_parser(
@@ -462,6 +471,26 @@ def cmd_shortest_path(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_distances(args: argparse.Namespace) -> int:
+    g = _load_graph(args)
+    try:
+        summary = distance_summary(g, weighted=args.weighted)
+    except ValueError as exc:
+        print(f"distances: {exc}", file=sys.stderr)
+        return 2
+    print(f"diameter: {summary['diameter']:g}")
+    print(f"radius: {summary['radius']:g}")
+    print("center: " + " ".join(map(str, summary["center"])))
+    print("periphery: " + " ".join(map(str, summary["periphery"])))
+    print(f"average shortest path length: {summary['average_shortest_path_length']:.6f}")
+    print(f"Wiener index: {summary['wiener_index']:g}")
+    print(f"global efficiency: {summary['global_efficiency']:.6f}")
+    if args.eccentricity:
+        for node, ecc in summary["eccentricity"].items():
+            print(f"  {node}: {ecc:g}")
+    return 0
+
+
 def _compose_report(g: Graph) -> str:
     dc = degree_centrality(g)
     cc = closeness_centrality(g)
@@ -581,6 +610,7 @@ _COMMANDS = {
     "clustering": cmd_clustering,
     "communities": cmd_communities,
     "shortest-path": cmd_shortest_path,
+    "distances": cmd_distances,
     "link-prediction": cmd_link_prediction,
     "similar": cmd_similar,
     "connectivity": cmd_connectivity,
