@@ -214,6 +214,42 @@ when they are cited by similar papers. Edge weights are ignored, as in the
 original definition. The dense matrix costs `O(n^2)` memory, which is fine up to
 a few thousand nodes.
 
+## All-pairs shortest paths and distance measures
+
+`floyd_warshall` returns the dense all-pairs distance matrix. It is
+vectorised one pivot at a time and also returns successor pointers, so
+`floyd_warshall_path` can rebuild any path. `bellman_ford` handles negative
+edge weights from a single source. Both raise `NegativeCycleError`, whose
+`.cycle` attribute lists the offending cycle's nodes.
+
+The distance measures are built on the all-pairs matrix:
+
+- `eccentricity`, `diameter`, `radius`, `center` and `periphery`;
+- `average_shortest_path_length`, over ordered pairs;
+- `wiener_index`, the sum of pairwise distances;
+- `global_efficiency`, the mean of `1/d(u, v)` (Latora & Marchiori 2001). It
+  stays finite on disconnected graphs.
+
+`distance_summary` returns all of them at once. Pass `weighted=True` to use
+edge weights instead of hop counts.
+
+```python
+from graph_analytics_kit import Graph, bellman_ford, distance_summary, floyd_warshall, floyd_warshall_path
+
+g = Graph.karate_club()
+s = distance_summary(g)
+s["diameter"], s["radius"], s["center"]        # 5.0, 3.0, [0, 1, 2, 3, 8, 13, 19, 31]
+s["average_shortest_path_length"]             # 2.4082
+nodes, D, nxt = floyd_warshall(g)
+floyd_warshall_path(nodes, nxt, 16, 26)       # a shortest path between two periphery nodes
+
+dg = Graph([(0, 1, 4.0), (0, 2, 1.0), (2, 1, -2.0)], directed=True)
+bellman_ford(dg, 0)[0]                        # {0: 0.0, 1: -1.0, 2: 1.0}
+```
+
+Eccentricity-based measures raise `ValueError` on graphs that are not
+(strongly) connected. On Karate Club every value matches networkx.
+
 ## k-core decomposition
 
 `core_number` uses the Batagelj–Zaversnik bin-sort. Edge weights and
@@ -258,6 +294,7 @@ graph-analytics communities
 graph-analytics communities --method label-propagation --seed 0
 graph-analytics communities --method spectral --n-communities 2
 graph-analytics shortest-path --source 0 --target 33
+graph-analytics distances --eccentricity
 graph-analytics flow --source 0 --sink 33
 graph-analytics flow --source 0 --sink 33 --unit
 graph-analytics link-prediction --u 0 --v 33
