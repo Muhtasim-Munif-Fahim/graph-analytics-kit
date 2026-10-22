@@ -201,6 +201,25 @@ def _build_parser() -> argparse.ArgumentParser:
     sim.add_argument("--top", type=int, default=5, help="How many similar nodes to list (default: 5)")
     sim.add_argument("--decay", type=float, default=0.8, help="SimRank decay factor C (default: 0.8)")
 
+    col = sub.add_parser(
+        "coloring",
+        help="Greedy vertex colouring (largest-first, smallest-last, DSATUR, ...) and exact chromatic number",
+    )
+    _add_graph_args(col)
+    col.add_argument(
+        "--strategy",
+        choices=["largest_first", "smallest_last", "dsatur", "connected_sequential_bfs",
+                 "connected_sequential_dfs", "random_sequential"],
+        default="dsatur",
+        help="Greedy order used for the printed colour classes (default: dsatur)",
+    )
+    col.add_argument("--seed", type=int, default=0, help="Seed for random_sequential (default: 0)")
+    col.add_argument("--exact", action="store_true", help="Also compute the exact chromatic number")
+
+    eu = sub.add_parser("eulerian", help="Check for an Eulerian circuit/path and print it (Hierholzer)")
+    _add_graph_args(eu)
+    eu.add_argument("--source", type=int, default=None, help="Optional start node")
+
     return parser
 
 
@@ -491,6 +510,44 @@ def cmd_distances(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_coloring(args: argparse.Namespace) -> int:
+    from .coloring import chromatic_number, color_classes, coloring_summary, greedy_color
+
+    g = _load_graph(args)
+    for name, k in coloring_summary(g, seed=args.seed).items():
+        print(f"{name}: {k} colours")
+    coloring = greedy_color(g, args.strategy, seed=args.seed)
+    classes = color_classes(coloring)
+    print(f"{args.strategy} colour classes ({len(classes)}):")
+    for c, members in enumerate(classes):
+        print(f"  [{c}] size={len(members)}: {' '.join(map(str, members))}")
+    if args.exact:
+        print(f"chromatic number: {chromatic_number(g)}")
+    return 0
+
+
+def cmd_eulerian(args: argparse.Namespace) -> int:
+    from .eulerian import eulerian_path, has_eulerian_path, is_eulerian, odd_degree_nodes
+
+    g = _load_graph(args)
+    circuit = is_eulerian(g)
+    path = has_eulerian_path(g)
+    print(f"eulerian circuit: {'yes' if circuit else 'no'}")
+    print(f"eulerian path: {'yes' if path else 'no'}")
+    if not g.directed:
+        odd = odd_degree_nodes(g)
+        print(f"odd-degree nodes ({len(odd)}): {' '.join(map(str, odd)) or 'none'}")
+    if path:
+        try:
+            edges = eulerian_path(g, source=args.source)
+        except ValueError as exc:
+            print(f"eulerian: {exc}", file=sys.stderr)
+            return 2
+        nodes = [edges[0][0]] + [v for _, v in edges]
+        print("walk: " + " -> ".join(map(str, nodes)))
+    return 0
+
+
 def _compose_report(g: Graph) -> str:
     dc = degree_centrality(g)
     cc = closeness_centrality(g)
@@ -616,6 +673,8 @@ _COMMANDS = {
     "connectivity": cmd_connectivity,
     "flow": cmd_flow,
     "cliques": cmd_cliques,
+    "coloring": cmd_coloring,
+    "eulerian": cmd_eulerian,
 }
 
 
