@@ -277,6 +277,37 @@ clique_number(g)                  # 5
 triangles(g)[0]                   # 18
 ```
 
+## Vertex colouring and Eulerian walks
+
+`greedy_color(g, strategy)` returns a proper colouring `{node: colour}` using
+greedy sequential colouring in one of six orders: `largest_first`
+(Welsh–Powell; identical to `networkx.greedy_color`), `smallest_last`
+(Matula–Beck degeneracy order, at most degeneracy + 1 colours), `dsatur`
+(Brélaz saturation order), `connected_sequential_bfs` / `_dfs` and
+`random_sequential`. `chromatic_number` computes the exact chromatic number
+with a DSATUR branch-and-bound seeded by a clique lower bound (intended for
+small and medium graphs). `is_proper_coloring`, `color_classes` and
+`coloring_summary` (colours used per strategy) round it out. Directed
+graphs are coloured on their underlying undirected graph; self-loops raise.
+
+`is_eulerian` / `has_eulerian_path` apply Euler's degree and connectivity
+conditions (undirected: even degrees or exactly two odd; directed: balanced
+in/out-degree or one +1 start and one −1 end, all edge-bearing nodes weakly
+connected). `eulerian_circuit` and `eulerian_path` return the walk as an edge
+list using an iterative Hierholzer algorithm in O(V + E).
+
+```python
+from graph_analytics_kit import Graph, chromatic_number, eulerian_circuit, greedy_color, karate_club
+
+g = karate_club()
+greedy_color(g, "dsatur")           # {33: 0, 32: 1, 31: 2, ...}
+chromatic_number(g)                 # 5 (the 5-clique {0, 1, 2, 3, 7} is a lower bound)
+eulerian_circuit(Graph([(0, 1), (1, 2), (2, 0)]))   # [(0, 1), (1, 2), (2, 0)]
+```
+
+CLI: `graph-analytics coloring --strategy dsatur --exact` and
+`graph-analytics eulerian`.
+
 ## Console script
 
 ```bash

@@ -72,10 +72,30 @@ from .distance import (
     radius,
     wiener_index,
 )
+from .coloring import (
+    COLORING_STRATEGIES,
+    chromatic_number,
+    color_classes,
+    coloring_summary,
+    greedy_color,
+    is_proper_coloring,
+)
+from .eulerian import eulerian_circuit, eulerian_path, has_eulerian_path, is_eulerian, odd_degree_nodes
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
     "__version__",
+    "COLORING_STRATEGIES",
+    "chromatic_number",
+    "color_classes",
+    "coloring_summary",
+    "greedy_color",
+    "is_proper_coloring",
+    "eulerian_circuit",
+    "eulerian_path",
+    "has_eulerian_path",
+    "is_eulerian",
+    "odd_degree_nodes",
     "NegativeCycleError",
     "average_shortest_path_length",
     "bellman_ford",
