@@ -220,6 +220,17 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_graph_args(eu)
     eu.add_argument("--source", type=int, default=None, help="Optional start node")
 
+    dg = sub.add_parser(
+        "dag",
+        help="Topological order, longest path, transitive reduction and critical path of a DAG",
+    )
+    dg.add_argument("--edges", required=True, help="Directed edge-list file ('u v' or 'u v w' per line)")
+    dg.add_argument("--weighted", action="store_true", help="Read a third column as edge weight")
+    dg.add_argument(
+        "--durations", default=None,
+        help="Task durations 'node=dur,node=dur,...' to run the Critical Path Method",
+    )
+
     return parser
 
 
@@ -548,6 +559,44 @@ def cmd_eulerian(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dag(args: argparse.Namespace) -> int:
+    from .dag import (
+        critical_path,
+        dag_longest_path,
+        find_cycle,
+        topological_generations,
+        topological_sort,
+        transitive_reduction,
+    )
+
+    g = Graph.from_edge_list(args.edges, directed=True, weighted=args.weighted)
+    cycle = find_cycle(g)
+    if cycle is not None:
+        print("not a DAG; cycle: " + " -> ".join(map(str, cycle + cycle[:1])))
+        return 1
+    print("topological order: " + " ".join(map(str, topological_sort(g))))
+    for k, layer in enumerate(topological_generations(g)):
+        print(f"  generation {k}: {' '.join(map(str, layer))}")
+    length, path = dag_longest_path(g, weighted=args.weighted)
+    print(f"longest path ({length:g}): " + " -> ".join(map(str, path)))
+    red = transitive_reduction(g)
+    print(f"transitive reduction: {red.number_of_edges()} of {g.number_of_edges()} edges kept")
+    if args.durations:
+        durations = {}
+        for item in args.durations.split(","):
+            node, _, value = item.partition("=")
+            durations[int(node)] = float(value)
+        cpm = critical_path(g, durations)
+        print(f"project duration: {cpm['duration']:g}")
+        print("critical path: " + " -> ".join(map(str, cpm["path"])))
+        for u in topological_sort(g):
+            print(
+                f"  task {u}: ES={cpm['es'][u]:g} EF={cpm['ef'][u]:g} "
+                f"LS={cpm['ls'][u]:g} LF={cpm['lf'][u]:g} slack={cpm['slack'][u]:g}"
+            )
+    return 0
+
+
 def _compose_report(g: Graph) -> str:
     dc = degree_centrality(g)
     cc = closeness_centrality(g)
@@ -675,6 +724,7 @@ _COMMANDS = {
     "cliques": cmd_cliques,
     "coloring": cmd_coloring,
     "eulerian": cmd_eulerian,
+    "dag": cmd_dag,
 }
 
 

@@ -66,7 +66,11 @@ class Graph:
         path = Path(path)
         edges: List[WeightedEdge] = []
         with path.open(newline="", encoding="utf-8") as fh:
-            reader = csv.reader(fh, delimiter=delimiter)
+            if delimiter is None:
+                # whitespace-delimited: any run of spaces/tabs separates fields
+                reader = (line.split() for line in fh)
+            else:
+                reader = csv.reader(fh, delimiter=delimiter)
             for row in reader:
                 if not row or row[0].lstrip().startswith(comments):
                     continue

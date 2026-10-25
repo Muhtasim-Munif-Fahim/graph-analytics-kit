@@ -308,6 +308,37 @@ eulerian_circuit(Graph([(0, 1), (1, 2), (2, 0)]))   # [(0, 1), (1, 2), (2, 0)]
 CLI: `graph-analytics coloring --strategy dsatur --exact` and
 `graph-analytics eulerian`.
 
+## DAGs: topological order, longest path, transitive reduction, critical path
+
+`topological_sort(g)` is Kahn's algorithm with ties broken by node insertion
+order, so the result is deterministic. `topological_generations(g)` returns
+the Kahn layers. On a cyclic graph both raise `CycleError`, and its `.cycle`
+attribute holds a witness cycle. `find_cycle` / `is_dag` check the same
+condition without raising. The other functions are:
+
+- `ancestors` / `descendants`: reachability sets.
+- `dag_longest_path`: maximum-weight path by DP in O(V + E), or depth with
+  `weighted=False`.
+- `count_paths(g, s, t)`: exact number of distinct paths.
+- `transitive_closure` / `transitive_reduction`: the reduction is the unique
+  minimal DAG with the same reachability.
+- `critical_path(g, durations)`: the Critical Path Method on an
+  activity-on-node DAG. It returns earliest/latest start and finish times,
+  total float (slack), the zero-slack tasks and one critical chain.
+
+```python
+from graph_analytics_kit import Graph, critical_path, topological_sort, transitive_reduction
+
+g = Graph([(0, 2), (0, 3), (1, 3), (2, 4), (3, 4), (0, 4)], directed=True)
+topological_sort(g)                                   # [0, 2, 1, 3, 4]
+transitive_reduction(g).number_of_edges()             # 5  (0 -> 4 is implied)
+critical_path(g, {0: 3, 1: 2, 2: 2, 3: 5, 4: 4})["path"]   # [0, 3, 4], duration 12
+```
+
+CLI: `graph-analytics dag --edges edges.txt [--weighted] [--durations 0=3,1=2,...]`.
+`Graph.from_edge_list` now treats its default `delimiter=None` as "any
+whitespace". Before this change it raised a `TypeError`.
+
 ## Console script
 
 ```bash
