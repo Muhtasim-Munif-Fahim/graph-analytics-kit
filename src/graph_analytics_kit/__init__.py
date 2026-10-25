@@ -81,6 +81,20 @@ from .coloring import (
     is_proper_coloring,
 )
 from .eulerian import eulerian_circuit, eulerian_path, has_eulerian_path, is_eulerian, odd_degree_nodes
+from .dag import (
+    CycleError,
+    ancestors,
+    count_paths,
+    critical_path,
+    dag_longest_path,
+    descendants,
+    find_cycle,
+    is_dag,
+    topological_generations,
+    topological_sort,
+    transitive_closure,
+    transitive_reduction,
+)
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
@@ -132,6 +146,18 @@ __all__ = [
     "bridges",
     "strongly_connected_components",
     "condensation_dag",
+    "CycleError",
+    "ancestors",
+    "count_paths",
+    "critical_path",
+    "dag_longest_path",
+    "descendants",
+    "find_cycle",
+    "is_dag",
+    "topological_generations",
+    "topological_sort",
+    "transitive_closure",
+    "transitive_reduction",
     "is_strongly_connected",
     "articulation_points",
     "biconnected_components",
