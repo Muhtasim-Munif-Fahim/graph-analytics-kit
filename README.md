@@ -339,6 +339,30 @@ CLI: `graph-analytics dag --edges edges.txt [--weighted] [--durations 0=3,1=2,..
 `Graph.from_edge_list` now treats its default `delimiter=None` as "any
 whitespace". Before this change it raised a `TypeError`.
 
+## Weisfeiler-Lehman hashing and graph isomorphism
+
+`graph_analytics_kit.isomorphism` adds 1-WL colour refinement and exact isomorphism:
+
+- `wl_colors` / `color_refinement` — per-round WL colours (content hashes, comparable across graphs) and the stable partition; directed graphs refine on in- and out-neighbours separately, self-loops are respected, optional `node_labels`.
+- `wl_graph_hash` — isomorphism-invariant fingerprint; `wl_subtree_kernel` — Shervashidze et al. WL subtree kernel matrix (optionally cosine-normalised).
+- `could_be_isomorphic` (fast necessary test), `find_isomorphism` / `iter_isomorphisms` / `is_isomorphic` — exact backtracking search pruned by joint stable WL colours.
+- `automorphism_count(limit=)` and `automorphism_orbits` — size of the automorphism group and its node orbits.
+
+```python
+from graph_analytics_kit import karate_club, automorphism_count, automorphism_orbits
+g = karate_club()
+automorphism_count(g)                      # 480
+[o for o in automorphism_orbits(g) if len(o) > 1]
+# [[14, 15, 18, 20, 22], [4, 10], [5, 6], [17, 21]]
+```
+
+1-WL cannot tell C6 from two disjoint triangles (equal hashes); `is_isomorphic` still answers correctly. CLI:
+
+```bash
+graph-analytics isomorphism                         # karate: hash, classes, |Aut|, orbits
+graph-analytics isomorphism --edges a.txt --compare b.txt
+```
+
 ## Console script
 
 ```bash
