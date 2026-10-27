@@ -81,6 +81,18 @@ from .coloring import (
     is_proper_coloring,
 )
 from .eulerian import eulerian_circuit, eulerian_path, has_eulerian_path, is_eulerian, odd_degree_nodes
+from .isomorphism import (
+    automorphism_count,
+    automorphism_orbits,
+    color_refinement,
+    could_be_isomorphic,
+    find_isomorphism,
+    is_isomorphic,
+    iter_isomorphisms,
+    wl_colors,
+    wl_graph_hash,
+    wl_subtree_kernel,
+)
 from .dag import (
     CycleError,
     ancestors,
@@ -98,6 +110,16 @@ from .dag import (
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
+    "automorphism_count",
+    "automorphism_orbits",
+    "color_refinement",
+    "could_be_isomorphic",
+    "find_isomorphism",
+    "is_isomorphic",
+    "iter_isomorphisms",
+    "wl_colors",
+    "wl_graph_hash",
+    "wl_subtree_kernel",
     "__version__",
     "COLORING_STRATEGIES",
     "chromatic_number",

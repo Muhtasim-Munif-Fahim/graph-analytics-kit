@@ -220,6 +220,17 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_graph_args(eu)
     eu.add_argument("--source", type=int, default=None, help="Optional start node")
 
+    iso = sub.add_parser(
+        "isomorphism",
+        help="WL hash, colour refinement, automorphism group/orbits, and exact isomorphism test",
+    )
+    _add_graph_args(iso)
+    iso.add_argument("--edges", default=None, help="Analyse this edge-list file instead of the built-in graph")
+    iso.add_argument("--directed", action="store_true", help="Treat edge-list files as directed")
+    iso.add_argument("--compare", default=None, help="Edge-list file to test for isomorphism against")
+    iso.add_argument("--iterations", type=int, default=3, help="WL rounds for the hash (default: 3)")
+    iso.add_argument("--limit", type=int, default=None, help="Stop counting automorphisms at this many")
+
     dg = sub.add_parser(
         "dag",
         help="Topological order, longest path, transitive reduction and critical path of a DAG",
@@ -559,6 +570,43 @@ def cmd_eulerian(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_isomorphism(args: argparse.Namespace) -> int:
+    from .isomorphism import (
+        automorphism_count,
+        automorphism_orbits,
+        color_refinement,
+        find_isomorphism,
+        wl_colors,
+        wl_graph_hash,
+    )
+
+    if args.edges:
+        g = Graph.from_edge_list(args.edges, directed=args.directed)
+    else:
+        g = _load_graph(args)
+    rounds = len(wl_colors(g)) - 1
+    classes = color_refinement(g)
+    print(f"WL hash ({args.iterations} rounds): {wl_graph_hash(g, iterations=args.iterations)}")
+    print(f"colour refinement: {len(classes)} stable classes after {rounds} rounds")
+    n_aut = automorphism_count(g, limit=args.limit)
+    reached = args.limit is not None and n_aut >= args.limit
+    print(f"automorphisms: {n_aut}" + (" (limit reached)" if reached else ""))
+    nontrivial = [o for o in automorphism_orbits(g) if len(o) > 1] if not args.limit else []
+    if nontrivial:
+        print(f"non-trivial orbits ({len(nontrivial)}):")
+        for orbit in nontrivial:
+            print("  " + " ".join(map(str, orbit)))
+    if args.compare:
+        other = Graph.from_edge_list(args.compare, directed=args.directed)
+        phi = find_isomorphism(g, other)
+        same_hash = wl_graph_hash(g, iterations=args.iterations) == wl_graph_hash(other, iterations=args.iterations)
+        print(f"WL hashes match: {'yes' if same_hash else 'no'}")
+        print(f"isomorphic: {'yes' if phi is not None else 'no'}")
+        if phi is not None:
+            print("mapping: " + " ".join(f"{u}->{v}" for u, v in sorted(phi.items())))
+    return 0
+
+
 def cmd_dag(args: argparse.Namespace) -> int:
     from .dag import (
         critical_path,
@@ -725,6 +773,7 @@ _COMMANDS = {
     "coloring": cmd_coloring,
     "eulerian": cmd_eulerian,
     "dag": cmd_dag,
+    "isomorphism": cmd_isomorphism,
 }
 
 
