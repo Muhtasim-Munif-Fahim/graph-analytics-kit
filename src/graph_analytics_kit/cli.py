@@ -242,6 +242,20 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Task durations 'node=dur,node=dur,...' to run the Critical Path Method",
     )
 
+    ts = sub.add_parser(
+        "tsp",
+        help="Travelling salesman tour (Held-Karp exact, or NN/double-tree + 2-opt/Or-opt)",
+    )
+    ts.add_argument("--edges", default=None, help="Edge-list file ('u v' or 'u v w'); default: karate club")
+    ts.add_argument("--weighted", action="store_true", help="Read a third column as edge weight")
+    ts.add_argument("--directed", action="store_true", help="Treat the edge list as directed (asymmetric TSP)")
+    ts.add_argument(
+        "--method", choices=["auto", "exact", "heuristic", "nearest-neighbor", "double-tree"], default="auto",
+    )
+    ts.add_argument("--no-closure", action="store_true",
+                    help="Use only direct edges (default: metric closure via shortest paths)")
+    ts.add_argument("--starts", type=int, default=None, help="Nearest-neighbour start cities for the heuristic")
+
     return parser
 
 
@@ -645,6 +659,30 @@ def cmd_dag(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_tsp(args: argparse.Namespace) -> int:
+    from .tsp import solve_tsp
+
+    if args.edges:
+        g = Graph.from_edge_list(args.edges, directed=args.directed, weighted=args.weighted)
+    else:
+        g = karate_club()
+    closure = not args.no_closure
+    try:
+        res = solve_tsp(g, method=args.method, metric_closure=closure, expand_path=closure,
+                        n_starts=args.starts)
+    except ValueError as exc:
+        print(f"tsp: {exc}", file=sys.stderr)
+        return 2
+    status = "optimal" if res.optimal else "heuristic"
+    print(f"tour cost: {res.cost:g}  ({status}, method={res.method}, {len(res.tour)} cities)")
+    print("tour: " + " -> ".join(map(str, res.tour + res.tour[:1])))
+    if res.path is not None and len(res.path) != len(res.tour) + 1:
+        print("walk over graph edges: " + " -> ".join(map(str, res.path)))
+    if not res.optimal and res.lower_bound is not None:
+        print(f"1-tree lower bound: {res.lower_bound:g}  gap <= {res.gap:.2%}")
+    return 0
+
+
 def _compose_report(g: Graph) -> str:
     dc = degree_centrality(g)
     cc = closeness_centrality(g)
@@ -774,6 +812,7 @@ _COMMANDS = {
     "eulerian": cmd_eulerian,
     "dag": cmd_dag,
     "isomorphism": cmd_isomorphism,
+    "tsp": cmd_tsp,
 }
 
 

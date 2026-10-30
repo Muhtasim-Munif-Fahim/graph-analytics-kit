@@ -3,7 +3,7 @@
 A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, harmonic, betweenness, PageRank, Personalized PageRank / random-walk-with-restart, eigenvector, Katz, and HITS
-hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dinic max-flow / min-cut, edge connectivity, Hopcroft–Karp bipartite matching, Dijkstra shortest paths, clustering
+hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dinic max-flow / min-cut, edge connectivity, Hopcroft–Karp bipartite matching, Dijkstra shortest paths, travelling-salesman tours (Held–Karp exact DP, nearest-neighbour / double-tree + 2-opt / Or-opt, 1-tree lower bound), clustering
 coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, label propagation, and spectral clustering),
 link-prediction scores (including Katz Index, Hub Promoted Index, and SimRank), AUC evaluation, and a command-line entry point
 that runs an end-to-end
@@ -339,6 +339,36 @@ CLI: `graph-analytics dag --edges edges.txt [--weighted] [--durations 0=3,1=2,..
 `Graph.from_edge_list` now treats its default `delimiter=None` as "any
 whitespace". Before this change it raised a `TypeError`.
 
+## Travelling salesman tours
+
+`solve_tsp(g_or_matrix)` returns a `TSPResult` with fields `tour`, `cost`,
+`optimal`, `lower_bound`, `gap` and `path`. It accepts a weighted `Graph` or
+a distance matrix, symmetric or asymmetric.
+
+- `held_karp(D)`: the exact Bellman-Held-Karp DP, `O(2^n n^2)`. The
+  `"auto"` method uses it for `n <= 12`; it works up to 16 cities.
+- `nearest_neighbor_tour`, `double_tree_tour` and `two_opt` / `or_opt`
+  local search. The double-tree tour is an MST preorder walk, at most
+  2·OPT on metric instances. The `"heuristic"` method runs multi-start
+  nearest neighbour plus double-tree, refines each tour with 2-opt and
+  Or-opt, and keeps the best one.
+- `one_tree_bound(D)`: the Held-Karp 1-tree lower bound. Heuristic results
+  report `gap`, an upper bound on how far they are from optimal.
+- `metric_closure=True` replaces missing edges by shortest-path distances,
+  so sparse graphs (where a Hamiltonian cycle may not exist) still get a
+  closed tour. `expand_path=True` maps it back to a walk over real edges.
+
+```python
+from graph_analytics_kit import Graph, solve_tsp
+
+g = Graph([(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (3, 0, 1.0), (0, 2, 1.5)])
+res = solve_tsp(g)            # exact: cost 4.0, tour [0, 3, 2, 1]
+res = solve_tsp(D, method="heuristic", n_starts=10)
+res.cost, res.lower_bound, res.gap
+```
+
+CLI: `graph-analytics tsp [--edges e.txt --weighted] [--method exact|heuristic] [--no-closure]`.
+
 ## Weisfeiler-Lehman hashing and graph isomorphism
 
 `graph_analytics_kit.isomorphism` adds 1-WL colour refinement and exact isomorphism:
@@ -394,6 +424,7 @@ graph-analytics link-prediction --u 0 --v 33 --metric common-neighbors
 graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric common-neighbors
 graph-analytics link-prediction --u 0 --v 33 --top-pairs 5 --metric simrank --decay 0.8
 graph-analytics similar --node 33 --top 5
+graph-analytics tsp --method heuristic
 ```
 
 See `examples/run_demo.py` for a complete end-to-end demo that writes a

@@ -93,6 +93,18 @@ from .isomorphism import (
     wl_graph_hash,
     wl_subtree_kernel,
 )
+from .tsp import (
+    TSPResult,
+    double_tree_tour,
+    held_karp,
+    nearest_neighbor_tour,
+    one_tree_bound,
+    or_opt,
+    solve_tsp,
+    tour_cost,
+    tsp_distance_matrix,
+    two_opt,
+)
 from .dag import (
     CycleError,
     ancestors,
@@ -110,6 +122,16 @@ from .dag import (
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
+    "TSPResult",
+    "double_tree_tour",
+    "held_karp",
+    "nearest_neighbor_tour",
+    "one_tree_bound",
+    "or_opt",
+    "solve_tsp",
+    "tour_cost",
+    "tsp_distance_matrix",
+    "two_opt",
     "automorphism_count",
     "automorphism_orbits",
     "color_refinement",
