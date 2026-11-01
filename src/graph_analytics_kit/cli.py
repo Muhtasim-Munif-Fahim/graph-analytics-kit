@@ -256,6 +256,17 @@ def _build_parser() -> argparse.ArgumentParser:
                     help="Use only direct edges (default: metric closure via shortest paths)")
     ts.add_argument("--starts", type=int, default=None, help="Nearest-neighbour start cities for the heuristic")
 
+    mt = sub.add_parser(
+        "matching",
+        help="Maximum matching in a general graph (Edmonds blossom) and a minimum edge cover",
+    )
+    mt.add_argument("--edges", default=None, help="Edge-list file ('u v' or 'u v w'); default: karate club")
+    mt.add_argument("--weighted", action="store_true", help="Read a third column as edge weight")
+    mt.add_argument("--bipartite-weight", action="store_true",
+                    help="Maximum-weight bipartite matching (Hungarian) instead of max cardinality")
+    mt.add_argument("--max-cardinality", action="store_true",
+                    help="With --bipartite-weight: heaviest among maximum-size matchings")
+
     return parser
 
 
@@ -683,6 +694,40 @@ def cmd_tsp(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_matching(args: argparse.Namespace) -> int:
+    from .matching import (
+        matching_edges,
+        maximum_matching,
+        maximum_weight_bipartite_matching,
+        minimum_edge_cover,
+    )
+
+    g = Graph.from_edge_list(args.edges, weighted=args.weighted) if args.edges else karate_club()
+    try:
+        if args.bipartite_weight:
+            m = maximum_weight_bipartite_matching(g, maximum_cardinality=args.max_cardinality)
+            pairs = matching_edges(m)
+            total = sum(g.get_weight(u, v) for u, v in pairs)
+            print(f"maximum-weight bipartite matching: {len(pairs)} edges, total weight {total:g}")
+        else:
+            m = maximum_matching(g)
+            pairs = matching_edges(m)
+            n = g.number_of_nodes()
+            status = "perfect" if 2 * len(pairs) == n else f"{n - 2 * len(pairs)} unmatched nodes"
+            print(f"maximum matching (Edmonds blossom): {len(pairs)} edges ({status})")
+        print("pairs: " + (", ".join(f"{u}-{v}" for u, v in pairs) or "none"))
+        if not args.bipartite_weight:
+            try:
+                cover = minimum_edge_cover(g)
+                print(f"minimum edge cover: {len(cover)} edges")
+            except ValueError as exc:
+                print(f"minimum edge cover: none ({exc})")
+    except ValueError as exc:
+        print(f"matching: {exc}", file=sys.stderr)
+        return 2
+    return 0
+
+
 def _compose_report(g: Graph) -> str:
     dc = degree_centrality(g)
     cc = closeness_centrality(g)
@@ -813,6 +858,7 @@ _COMMANDS = {
     "dag": cmd_dag,
     "isomorphism": cmd_isomorphism,
     "tsp": cmd_tsp,
+    "matching": cmd_matching,
 }
 
 
