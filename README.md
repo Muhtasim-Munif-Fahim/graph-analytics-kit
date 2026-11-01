@@ -3,7 +3,7 @@
 A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, harmonic, betweenness, PageRank, Personalized PageRank / random-walk-with-restart, eigenvector, Katz, and HITS
-hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dinic max-flow / min-cut, edge connectivity, Hopcroft–Karp bipartite matching, Dijkstra shortest paths, travelling-salesman tours (Held–Karp exact DP, nearest-neighbour / double-tree + 2-opt / Or-opt, 1-tree lower bound), clustering
+hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dinic max-flow / min-cut, edge connectivity, Hopcroft–Karp bipartite matching, Edmonds blossom general matching, Hungarian assignment, Dijkstra shortest paths, travelling-salesman tours (Held–Karp exact DP, nearest-neighbour / double-tree + 2-opt / Or-opt, 1-tree lower bound), clustering
 coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, label propagation, and spectral clustering),
 link-prediction scores (including Katz Index, Hub Promoted Index, and SimRank), AUC evaluation, and a command-line entry point
 that runs an end-to-end
@@ -67,6 +67,32 @@ res.value, res.source_side, res.cut_edges   # 23.0, [0, 1, 2, 4], [(1, 3), (4, 3
 edge_connectivity(Graph.karate_club(), 0, 33)   # 10 edge-disjoint paths
 matching = maximum_bipartite_matching(Graph([(0, 3), (0, 4), (1, 3), (2, 4), (2, 5)]))
 len(matching) // 2                               # 3
+```
+
+## General matching (Edmonds blossom) and the assignment problem
+
+`maximum_matching(g)` finds a maximum-cardinality matching in **any** undirected
+graph using Edmonds' blossom algorithm, `O(V^3)`. Odd cycles are contracted, so
+augmenting paths through them are not missed, which bipartite methods cannot
+guarantee. `linear_sum_assignment(C, maximize=False)` is the Hungarian method
+(Kuhn–Munkres with potentials, shortest augmenting paths). It handles
+rectangular matrices and `inf` for forbidden pairs, and follows the scipy
+conventions. `maximum_weight_bipartite_matching(g, maximum_cardinality=False)`
+builds on it. `minimum_edge_cover(g)` uses Gallai's identity `ρ = |V| − ν`.
+`is_matching` and `is_perfect_matching` validate a matching.
+
+```python
+from graph_analytics_kit import Graph, linear_sum_assignment, maximum_matching
+
+petersen = Graph([(0, 1), (1, 2), (2, 3), (3, 4), (4, 0), (0, 5), (1, 6), (2, 7),
+                  (3, 8), (4, 9), (5, 7), (7, 9), (9, 6), (6, 8), (8, 5)])
+len(maximum_matching(petersen)) // 2             # 5 (perfect)
+rows, cols = linear_sum_assignment([[4, 1, 3], [2, 0, 5], [3, 2, 2]])   # cost 5
+```
+
+```bash
+graph-analytics matching                          # karate club: 13 edges, 21-edge cover
+graph-analytics matching --edges jobs.txt --weighted --bipartite-weight
 ```
 
 ## Install

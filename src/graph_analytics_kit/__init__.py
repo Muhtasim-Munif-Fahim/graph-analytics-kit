@@ -41,6 +41,15 @@ from .clustering import average_clustering, local_clustering
 from .community import communities, girvan_newman, label_propagation, modularity, spectral_clustering
 from .dfs import dfs_path, dfs_traversal
 from .flow import FlowResult, edge_connectivity, maximum_bipartite_matching, maximum_flow, minimum_cut
+from .matching import (
+    is_matching,
+    is_perfect_matching,
+    linear_sum_assignment,
+    matching_edges,
+    maximum_matching,
+    maximum_weight_bipartite_matching,
+    minimum_edge_cover,
+)
 from .mst import kruskal_mst, mst_weight
 from .hits import hits
 from .katz import katz_centrality
@@ -240,4 +249,11 @@ __all__ = [
     "minimum_cut",
     "edge_connectivity",
     "maximum_bipartite_matching",
+    "maximum_matching",
+    "maximum_weight_bipartite_matching",
+    "linear_sum_assignment",
+    "minimum_edge_cover",
+    "is_matching",
+    "is_perfect_matching",
+    "matching_edges",
 ]
