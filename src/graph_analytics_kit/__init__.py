@@ -128,9 +128,23 @@ from .dag import (
     transitive_closure,
     transitive_reduction,
 )
+from .dominators import (
+    dominance_frontiers,
+    dominates,
+    dominator_tree,
+    dominators,
+    immediate_dominators,
+    post_dominators,
+)
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
+    "dominance_frontiers",
+    "dominates",
+    "dominator_tree",
+    "dominators",
+    "immediate_dominators",
+    "post_dominators",
     "TSPResult",
     "double_tree_tour",
     "held_karp",
