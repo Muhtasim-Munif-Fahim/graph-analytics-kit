@@ -10,6 +10,27 @@ that runs an end-to-end
 analysis on the classic Zachary's Karate Club network.
 
 
+## Dominators, dominance frontiers, and post-dominators
+
+`immediate_dominators(g, root)` computes the dominator tree of a directed
+flow graph with the Cooper–Harvey–Kennedy iterative algorithm over an
+iterative reverse post-order (safe on deep graphs). Node `d` dominates `v`
+when every path from `root` to `v` passes through `d`, so `idom[v]` is the
+closest single point of failure on the way to `v`. `dominator_tree`,
+`dominators`, `dominates`, `dominance_frontiers` (where SSA phi nodes go) and
+`post_dominators` (with respect to an exit node) build on it. Nodes not
+reachable from the root are left out.
+
+```python
+from graph_analytics_kit import Graph, immediate_dominators, dominance_frontiers
+
+g = Graph([(0, 1), (0, 2), (1, 3), (2, 3), (3, 4)], directed=True)
+immediate_dominators(g, 0)   # {0: 0, 1: 0, 2: 0, 3: 0, 4: 3}
+dominance_frontiers(g, 0)    # {0: set(), 1: {3}, 2: {3}, 3: set(), 4: set()}
+```
+
+CLI: `graph-analytics dominators --edges flow.txt --root 0 --post 4`.
+
 ## Personalized PageRank
 
 `personalized_pagerank` is the restart / seed-biased counterpart of

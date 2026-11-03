@@ -267,6 +267,15 @@ def _build_parser() -> argparse.ArgumentParser:
     mt.add_argument("--max-cardinality", action="store_true",
                     help="With --bipartite-weight: heaviest among maximum-size matchings")
 
+    dm = sub.add_parser(
+        "dominators",
+        help="Immediate dominators, dominator tree and dominance frontiers of a directed flow graph",
+    )
+    dm.add_argument("--edges", required=True, help="Directed edge-list file ('u v' per line)")
+    dm.add_argument("--root", type=int, required=True, help="Entry node of the flow graph")
+    dm.add_argument("--post", type=int, default=None, metavar="EXIT",
+                    help="Also print immediate post-dominators with respect to this exit node")
+
     return parser
 
 
@@ -670,6 +679,40 @@ def cmd_dag(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dominators(args: argparse.Namespace) -> int:
+    from .dominators import dominance_frontiers, dominator_tree, immediate_dominators, post_dominators
+
+    g = Graph.from_edge_list(args.edges, directed=True)
+    try:
+        idom = immediate_dominators(g, args.root)
+    except ValueError as exc:
+        print(f"dominators: {exc}", file=sys.stderr)
+        return 2
+    tree = dominator_tree(g, args.root)
+    df = dominance_frontiers(g, args.root)
+    unreachable = [v for v in g.nodes if v not in idom]
+    print(f"root: {args.root}  reachable: {len(idom)}  unreachable: {len(unreachable)}")
+    for v in g.nodes:
+        if v not in idom:
+            continue
+        kids = " ".join(map(str, tree[v])) or "-"
+        front = " ".join(map(str, sorted(df[v]))) or "-"
+        print(f"  node {v}: idom={idom[v]} children={kids} frontier={front}")
+    if unreachable:
+        print("unreachable: " + " ".join(map(str, unreachable)))
+    if args.post is not None:
+        try:
+            ipdom = post_dominators(g, args.post)
+        except ValueError as exc:
+            print(f"dominators: {exc}", file=sys.stderr)
+            return 2
+        print(f"post-dominators (exit {args.post}):")
+        for v in g.nodes:
+            if v in ipdom:
+                print(f"  node {v}: ipdom={ipdom[v]}")
+    return 0
+
+
 def cmd_tsp(args: argparse.Namespace) -> int:
     from .tsp import solve_tsp
 
@@ -856,6 +899,7 @@ _COMMANDS = {
     "coloring": cmd_coloring,
     "eulerian": cmd_eulerian,
     "dag": cmd_dag,
+    "dominators": cmd_dominators,
     "isomorphism": cmd_isomorphism,
     "tsp": cmd_tsp,
     "matching": cmd_matching,
