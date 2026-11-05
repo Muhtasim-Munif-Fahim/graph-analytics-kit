@@ -14,6 +14,7 @@ from .centrality import (
     harmonic_centrality,
 )
 from .assortativity import degree_assortativity
+from .rich_club import rich_club_coefficient
 from .link_prediction import (
     adamic_adar,
     adamic_adar_scores,
@@ -233,6 +234,7 @@ __all__ = [
     "local_clustering",
     "average_clustering",
     "degree_assortativity",
+    "rich_club_coefficient",
     "adamic_adar",
     "adamic_adar_scores",
     "jaccard",

@@ -217,6 +217,8 @@ disconnected graphs because unreachable pairs simply contribute nothing.
 
 `degree_assortativity(g)` returns Newman's degree assortativity coefficient: the Pearson correlation of the degrees at the two ends of every edge. Values near `+1` indicate assortative mixing (high-degree nodes link to high-degree nodes); values near `-1` indicate disassortative mixing. Returns `0.0` when the coefficient is undefined (too few edges or zero degree variance).
 
+`rich_club_coefficient(g, k=None)` returns the Zhou–Mondragón rich-club coefficient `phi(k) = 2 E_k / (N_k (N_k - 1))`, the edge density among nodes with degree greater than `k`. With `k=None` it returns a `{k: phi(k)}` dict over every threshold that leaves at least two rich nodes; undirected graphs only.
+
 `adamic_adar(g, u, v)` returns the Adamic–Adar link-prediction score: the sum of `1 / log(deg(w))` over common neighbors `w` of `u` and `v` (neighbors with degree `≤ 1` are skipped). Higher scores suggest a stronger missing link. `adamic_adar_scores(g, pairs)` evaluates many pairs at once.
 
 `jaccard(g, u, v)` returns the Jaccard coefficient `|N(u) ∩ N(v)| / |N(u) ∪ N(v)|` (0 when the union is empty). `jaccard_scores(g, pairs)` evaluates many pairs at once.
