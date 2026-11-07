@@ -132,7 +132,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     dist = sub.add_parser(
         "distances",
-        help="Diameter, radius, center, periphery, average path length, Wiener index, efficiency",
+        help="Diameter, radius, center, periphery, average path length, Wiener index, global/local efficiency",
     )
     _add_graph_args(dist)
     dist.add_argument("--weighted", action="store_true", help="Use edge weights instead of hop counts")
@@ -560,6 +560,7 @@ def cmd_distances(args: argparse.Namespace) -> int:
     print(f"average shortest path length: {summary['average_shortest_path_length']:.6f}")
     print(f"Wiener index: {summary['wiener_index']:g}")
     print(f"global efficiency: {summary['global_efficiency']:.6f}")
+    print(f"average local efficiency: {summary['average_local_efficiency']:.6f}")
     if args.eccentricity:
         for node, ecc in summary["eccentricity"].items():
             print(f"  {node}: {ecc:g}")

@@ -9,6 +9,7 @@ import pytest
 from graph_analytics_kit import (
     Graph,
     NegativeCycleError,
+    average_local_efficiency,
     average_shortest_path_length,
     bellman_ford,
     center,
@@ -20,6 +21,7 @@ from graph_analytics_kit import (
     floyd_warshall_path,
     global_efficiency,
     karate_club,
+    local_efficiency,
     periphery,
     radius,
     wiener_index,
@@ -216,3 +218,49 @@ def test_cli_distances(capsys):
     assert "average shortest path length: 2.408200" in out
     assert "Wiener index: 1351" in out
     assert "  33: 4" in out
+
+
+def test_local_efficiency_complete_and_path():
+    k = _complete(5)
+    le = local_efficiency(k)
+    # Neighbourhood of every node in K5 is K4, whose global efficiency is 1.
+    assert all(v == pytest.approx(1.0) for v in le.values())
+    assert average_local_efficiency(k) == pytest.approx(1.0)
+
+    p = _path(4)  # 0-1-2-3
+    le = local_efficiency(p)
+    # Ends have degree 1 -> 0; middle nodes have two neighbours that are not
+    # adjacent -> induced empty edge set on 2 nodes -> efficiency 0.
+    assert le[0] == 0.0 and le[3] == 0.0
+    assert le[1] == 0.0 and le[2] == 0.0
+    assert average_local_efficiency(p) == 0.0
+
+
+def test_local_efficiency_triangle_with_pendant():
+    # Triangle 0-1-2 plus pendant 3 attached to 0.
+    g = Graph([(0, 1), (1, 2), (2, 0), (0, 3)])
+    le = local_efficiency(g)
+    assert le[3] == 0.0  # degree 1
+    # Neighbours of 0 are {1, 2, 3}; edges among them: only 1-2.
+    # Global efficiency counts both directed off-diagonals, so the 1-2 edge
+    # contributes twice: 2 / (3*2) = 1/3.
+    assert le[0] == pytest.approx(1.0 / 3.0)
+    # Neighbours of 1 are {0, 2}, which are adjacent -> efficiency 1.
+    assert le[1] == pytest.approx(1.0)
+    assert le[2] == pytest.approx(1.0)
+
+
+def test_average_local_efficiency_in_distance_summary_and_karate():
+    g = karate_club()
+    s = distance_summary(g)
+    assert s["average_local_efficiency"] == pytest.approx(average_local_efficiency(g))
+    assert s["local_efficiency"] == local_efficiency(g)
+    # Leaf node 11 (only connected to 0) must be 0.
+    assert s["local_efficiency"][11] == 0.0
+    assert 0.0 < s["average_local_efficiency"] < 1.0
+
+
+def test_distances_cli_prints_average_local_efficiency(capsys):
+    assert main(["distances"]) == 0
+    out = capsys.readouterr().out
+    assert "average local efficiency:" in out

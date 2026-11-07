@@ -69,6 +69,7 @@ from .shortest_path import dijkstra_shortest_path, reconstruct_path
 from .simrank import most_similar, simrank_matrix, simrank_scores, simrank_similarity
 from .distance import (
     NegativeCycleError,
+    average_local_efficiency,
     average_shortest_path_length,
     bellman_ford,
     center,
@@ -78,6 +79,7 @@ from .distance import (
     floyd_warshall,
     floyd_warshall_path,
     global_efficiency,
+    local_efficiency,
     periphery,
     radius,
     wiener_index,
@@ -188,6 +190,8 @@ __all__ = [
     "floyd_warshall",
     "floyd_warshall_path",
     "global_efficiency",
+    "local_efficiency",
+    "average_local_efficiency",
     "periphery",
     "radius",
     "wiener_index",
