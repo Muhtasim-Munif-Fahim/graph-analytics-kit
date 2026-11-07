@@ -8,8 +8,9 @@
   via :func:`floyd_warshall_path`.
 * Distance measures built on the all-pairs matrix: :func:`eccentricity`,
   :func:`diameter`, :func:`radius`, :func:`center`, :func:`periphery`,
-  :func:`average_shortest_path_length`, :func:`wiener_index` and
-  :func:`global_efficiency` (Latora & Marchiori, PRL 2001), plus
+  :func:`average_shortest_path_length`, :func:`wiener_index`,
+  :func:`global_efficiency` and :func:`local_efficiency` /
+  :func:`average_local_efficiency` (Latora & Marchiori, PRL 2001), plus
   :func:`distance_summary` for reports.
 
 Every function takes ``weighted``: ``False`` (default) counts hops, ``True``
@@ -38,6 +39,8 @@ __all__ = [
     "average_shortest_path_length",
     "wiener_index",
     "global_efficiency",
+    "local_efficiency",
+    "average_local_efficiency",
     "distance_summary",
 ]
 
@@ -248,8 +251,49 @@ def global_efficiency(g: Graph, *, weighted: bool = False) -> float:
     return float(inv[off].sum() / (n * (n - 1)))
 
 
+
+
+def _induced_neighborhood(g: Graph, node: int, *, weighted: bool) -> Graph:
+    """Undirected/directed induced subgraph on the open neighbourhood of ``node``."""
+    nbrs = list(g.neighbors(node))
+    # For directed graphs, open neighbourhood is out-neighbours (matches
+    # NetworkX / Latora convention used with out-going adjacency).
+    sub = Graph(directed=g.directed)
+    for u in nbrs:
+        sub.add_node(u)
+    nbr_set = set(nbrs)
+    for u in nbrs:
+        for v in g.neighbors(u):
+            if v in nbr_set:
+                w = g.get_weight(u, v) if weighted else 1.0
+                # undirected Graph.add_edge writes both directions; avoid double write
+                if g.directed or u <= v or not sub.has_edge(u, v):
+                    sub.add_edge(u, v, weight=w)
+    return sub
+
+
+def local_efficiency(g: Graph, *, weighted: bool = False) -> Dict[int, float]:
+    """Per-node local efficiency (Latora & Marchiori).
+
+    The local efficiency of ``v`` is the global efficiency of the subgraph
+    induced by the open neighbourhood of ``v``. Isolated nodes and nodes with
+    a single neighbour have local efficiency 0 (their neighbourhood has fewer
+    than two nodes).
+    """
+    return {v: global_efficiency(_induced_neighborhood(g, v, weighted=weighted), weighted=weighted)
+            for v in g.nodes}
+
+
+def average_local_efficiency(g: Graph, *, weighted: bool = False) -> float:
+    """Mean of :func:`local_efficiency` over all nodes (0 on the empty graph)."""
+    if g.number_of_nodes() == 0:
+        return 0.0
+    vals = local_efficiency(g, weighted=weighted)
+    return float(sum(vals.values()) / len(vals))
+
+
 def distance_summary(g: Graph, *, weighted: bool = False) -> Dict[str, object]:
-    """Diameter, radius, center, periphery, average path length, Wiener index, efficiency."""
+    """Diameter, radius, center, periphery, average path length, Wiener index, global/local efficiency."""
 
     ecc = eccentricity(g, weighted=weighted)
     r = min(ecc.values())
@@ -263,5 +307,7 @@ def distance_summary(g: Graph, *, weighted: bool = False) -> Dict[str, object]:
         "average_shortest_path_length": average_shortest_path_length(g, weighted=weighted),
         "wiener_index": wiener_index(g, weighted=weighted),
         "global_efficiency": global_efficiency(g, weighted=weighted),
+        "average_local_efficiency": average_local_efficiency(g, weighted=weighted),
+        "local_efficiency": local_efficiency(g, weighted=weighted),
         "eccentricity": ecc,
     }

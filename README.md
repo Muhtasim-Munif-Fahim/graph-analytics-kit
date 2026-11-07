@@ -3,7 +3,7 @@
 A small, dependency-light Python toolkit for graph analytics with
 reproducible Markdown reporting. It implements centrality measures
 (degree, closeness, harmonic, betweenness, PageRank, Personalized PageRank / random-walk-with-restart, eigenvector, Katz, and HITS
-hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dinic max-flow / min-cut, edge connectivity, Hopcroft–Karp bipartite matching, Edmonds blossom general matching, Hungarian assignment, Dijkstra shortest paths, travelling-salesman tours (Held–Karp exact DP, nearest-neighbour / double-tree + 2-opt / Or-opt, 1-tree lower bound), clustering
+hubs/authorities), k-core numbers, bridges / articulation points / biconnected components, Dinic max-flow / min-cut, edge connectivity, Hopcroft–Karp bipartite matching, Edmonds blossom general matching, Hungarian assignment, Dijkstra shortest paths, travelling-salesman tours (Held–Karp exact DP, nearest-neighbour / double-tree + 2-opt / Or-opt, 1-tree lower bound), local / global efficiency, clustering
 coefficients, Newman degree assortativity, community detection (Louvain, Girvan–Newman, label propagation, and spectral clustering),
 link-prediction scores (including Katz Index, Hub Promoted Index, and SimRank), AUC evaluation, and a command-line entry point
 that runs an end-to-end
@@ -30,6 +30,22 @@ dominance_frontiers(g, 0)    # {0: set(), 1: {3}, 2: {3}, 3: set(), 4: set()}
 ```
 
 CLI: `graph-analytics dominators --edges flow.txt --root 0 --post 4`.
+
+## Local efficiency
+
+`local_efficiency(g)` returns the Latora–Marchiori local efficiency of every
+node: the global efficiency of the subgraph induced by that node's open
+neighbourhood. `average_local_efficiency(g)` is the mean over nodes. Isolated
+nodes and degree-1 nodes score 0. The `distances` CLI prints the average.
+
+```python
+from graph_analytics_kit import Graph, local_efficiency, average_local_efficiency
+
+g = Graph.karate_club()
+avg = average_local_efficiency(g)
+assert 0.0 < avg < 1.0
+assert local_efficiency(g)[11] == 0.0  # leaf hanging off the instructor
+```
 
 ## Personalized PageRank
 
