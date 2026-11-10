@@ -225,6 +225,12 @@ L2-normalized by default; pass `normalized=False` for the raw solution.
 betweenness already ships via Brandes, so HITS is the additional
 link-analysis measure.
 
+`voterank(g, number_of_nodes=None)` selects influential spreaders with
+VoteRank (Zhang et al., 2016): nodes vote for their neighbours, the top
+scorer is elected, and its neighbours lose `1/<k>` voting ability so later
+spreaders sit apart. Returns labels in election order (matches NetworkX on
+the karate club: `[33, 0, 32, 2, ...]`).
+
 `harmonic_centrality(g)` returns the sum of reciprocal shortest-path
 distances `sum 1/d(u,v)` over reachable nodes `v ≠ u`. Isolated nodes
 score `0.0`. Unlike closeness, harmonic centrality is well-defined on
