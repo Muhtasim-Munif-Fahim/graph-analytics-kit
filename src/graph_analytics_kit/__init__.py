@@ -139,9 +139,11 @@ from .dominators import (
     immediate_dominators,
     post_dominators,
 )
+from .spreaders import voterank
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
+    "voterank",
     "dominance_frontiers",
     "dominates",
     "dominator_tree",
