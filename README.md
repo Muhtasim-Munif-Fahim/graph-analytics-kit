@@ -501,3 +501,20 @@ graph-analytics tsp --method heuristic
 See `examples/run_demo.py` for a complete end-to-end demo that writes a
 Markdown report to `examples/output/demo_report.md`, and `tests/` for the
 unit-test contract.
+
+## Structural holes (Burt's constraint and effective size)
+
+Burt's (1992) brokerage measures for weighted, directed or undirected graphs.
+`constraint(g)` is high when a node's contacts are tightly interconnected;
+`effective_size(g)` counts non-redundant contacts (`n - 2t/n` on unweighted
+undirected graphs); `burt_efficiency(g)` is effective size per contact and
+`burt_hierarchy(g)` measures how concentrated the constraint is on one contact.
+`structural_holes(g)` returns all four per node. Isolated nodes get `nan`.
+
+```python
+from graph_analytics_kit import Graph, constraint, effective_size, structural_holes
+
+g = Graph.karate_club()
+brokers = sorted(constraint(g).items(), key=lambda kv: kv[1])[:5]  # lowest constraint
+effective_size(g)[0], structural_holes(g, nodes=[0, 33])
+```

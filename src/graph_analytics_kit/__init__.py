@@ -140,9 +140,23 @@ from .dominators import (
     post_dominators,
 )
 from .spreaders import voterank
+from .structural_holes import (
+    constraint,
+    effective_size,
+    burt_efficiency,
+    burt_hierarchy,
+    local_constraint,
+    structural_holes,
+)
 from .scc import condensation_dag, is_strongly_connected, strongly_connected_components
 
 __all__ = [
+    "constraint",
+    "effective_size",
+    "burt_efficiency",
+    "burt_hierarchy",
+    "local_constraint",
+    "structural_holes",
     "voterank",
     "dominance_frontiers",
     "dominates",
